@@ -1,0 +1,34 @@
+# API
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+pydantic==2.11.4
+python-dotenv==1.1.0
+
+# Database
+supabase==2.15.1
+
+# Plaid
+plaid-python==20.1.0
+
+# AI + Agents
+anthropic==0.51.0
+langchain==0.3.25
+langchain-anthropic==0.3.10
+langgraph==0.3.21
+
+# State
+redis==5.2.1
+
+# Google Calendar
+google-auth==2.40.0
+google-auth-oauthlib==1.2.1
+google-api-python-client==2.169.0
+
+# Utils
+httpx==0.28.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Testing
+pytest==8.3.5
+pytest-asyncio==0.26.0
