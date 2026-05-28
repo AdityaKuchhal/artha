@@ -11,6 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.routes.jobs import router as jobs_router
 from backend.api.routes.shifts import router as shifts_router
+from backend.api.routes.plaid import router as plaid_router
+from backend.api.routes.transactions import router as transactions_router
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -43,6 +45,8 @@ app.add_middleware(
 # Routers
 app.include_router(jobs_router)
 app.include_router(shifts_router)
+app.include_router(plaid_router)
+app.include_router(transactions_router)
 
 
 @app.get("/health", tags=["System"])
