@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0a0a0f;
+  --bg2: #111118;
+  --bg3: #1a1a24;
+  --accent: #00e5a0;
+}
+
+body {
+  background-color: var(--bg);
+  color: #e8e8f0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(17, 17, 24, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(120, 120, 200, 0.12);
+  }
+}
