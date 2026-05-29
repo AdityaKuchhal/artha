@@ -10,14 +10,10 @@ export default function IncomePage() {
   const [shifts, setShifts] = useState<Shift[]>([])
   const [showJobForm, setShowJobForm] = useState(false)
   const [showShiftForm, setShowShiftForm] = useState(false)
-  const [loading, setLoading] = useState(true)
 
-  // Job form state
   const [jobName, setJobName] = useState('')
   const [hourlyRate, setHourlyRate] = useState('')
   const [jobColor, setJobColor] = useState('#00e5a0')
-
-  // Shift form state
   const [selectedJob, setSelectedJob] = useState('')
   const [shiftDate, setShiftDate] = useState('')
   const [startTime, setStartTime] = useState('')
@@ -27,21 +23,16 @@ export default function IncomePage() {
     Promise.all([api.jobs.list(), api.shifts.list()])
       .then(([j, s]) => { setJobs(j); setShifts(s) })
       .catch(console.error)
-      .finally(() => setLoading(false))
   }, [])
 
-  async function addJob(e: React.FormEvent<HTMLFormElement>) {
+  async function addJob(e: React.FormEvent) {
     e.preventDefault()
-    const job = await api.jobs.create({
-      name: jobName,
-      hourly_rate: parseFloat(hourlyRate),
-      color: jobColor,
-    })
+    const job = await api.jobs.create({ name: jobName, hourly_rate: parseFloat(hourlyRate), color: jobColor })
     setJobs([...jobs, job])
     setJobName(''); setHourlyRate(''); setShowJobForm(false)
   }
 
-  async function addShift(e: React.FormEvent<HTMLFormElement>) {
+  async function addShift(e: React.FormEvent) {
     e.preventDefault()
     const shift = await api.shifts.create({
       job_id: selectedJob,
@@ -62,74 +53,48 @@ export default function IncomePage() {
   const totalHours = shifts.reduce((sum, s) => sum + s.hours_worked, 0)
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
+    <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Income</h1>
-          <p className="text-[#6b7280] text-sm mt-1">
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#e8e8f0', marginBottom: '4px' }}>Income</h1>
+          <p style={{ fontSize: '13px', color: '#6b7280' }}>
             {formatCurrency(totalEarnings)} earned · {totalHours.toFixed(1)} hours
           </p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowJobForm(!showJobForm)}
-            className="flex items-center gap-2 px-4 py-2 border border-[rgba(120,120,200,0.2)] rounded-lg text-sm text-[#9090a8] hover:text-white transition-colors"
-          >
-            <Briefcase size={14} />
-            Add Job
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn-secondary" onClick={() => setShowJobForm(!showJobForm)}>
+            <Briefcase size={13} /> Add Job
           </button>
-          <button
-            onClick={() => setShowShiftForm(!showShiftForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#00e5a0] text-[#0a0a0f] rounded-lg text-sm font-semibold hover:bg-[#00b87a] transition-colors"
-          >
-            <Plus size={14} />
-            Log Shift
+          <button className="btn-primary" onClick={() => setShowShiftForm(!showShiftForm)}>
+            <Plus size={13} /> Log Shift
           </button>
         </div>
       </div>
 
       {/* Add Job Form */}
       {showJobForm && (
-        <form onSubmit={addJob} className="bg-[#111118] border border-[rgba(120,120,200,0.12)] rounded-xl p-6">
-          <h3 className="text-sm font-semibold text-white mb-4">New Job</h3>
-          <div className="grid grid-cols-3 gap-4">
+        <form onSubmit={addJob} className="card">
+          <div style={{ fontSize: '13px', fontWeight: 600, color: '#e8e8f0', marginBottom: '16px' }}>New Job</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: '16px' }}>
             <div>
-              <label className="block text-xs text-[#6b7280] mb-1">Job Name</label>
-              <input
-                value={jobName}
-                onChange={e => setJobName(e.target.value)}
-                className="w-full bg-[#1a1a24] border border-[rgba(120,120,200,0.12)] rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-[#00e5a0]"
-                placeholder="Tim Hortons"
-                required
-              />
+              <label style={{ display: 'block', fontSize: '11px', color: '#6b7280', marginBottom: '6px' }}>Job Name</label>
+              <input value={jobName} onChange={e => setJobName(e.target.value)} className="input" placeholder="Job name" required />
             </div>
             <div>
-              <label className="block text-xs text-[#6b7280] mb-1">Hourly Rate ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={hourlyRate}
-                onChange={e => setHourlyRate(e.target.value)}
-                className="w-full bg-[#1a1a24] border border-[rgba(120,120,200,0.12)] rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-[#00e5a0]"
-                placeholder="17.20"
-                required
-              />
+              <label style={{ display: 'block', fontSize: '11px', color: '#6b7280', marginBottom: '6px' }}>Hourly Rate ($)</label>
+              <input type="number" step="0.01" value={hourlyRate} onChange={e => setHourlyRate(e.target.value)} className="input" placeholder="17.20" required />
             </div>
             <div>
-              <label className="block text-xs text-[#6b7280] mb-1">Color</label>
-              <input
-                type="color"
-                value={jobColor}
-                onChange={e => setJobColor(e.target.value)}
-                className="w-full h-10 bg-[#1a1a24] border border-[rgba(120,120,200,0.12)] rounded-lg cursor-pointer"
-              />
+              <label style={{ display: 'block', fontSize: '11px', color: '#6b7280', marginBottom: '6px' }}>Color</label>
+              <input type="color" value={jobColor} onChange={e => setJobColor(e.target.value)}
+                style={{ width: '100%', height: '40px', background: '#1a1a24', border: '1px solid rgba(120,120,200,0.12)', borderRadius: '8px', cursor: 'pointer' }} />
             </div>
           </div>
-          <div className="flex gap-2 mt-4">
-            <button type="submit" className="px-4 py-2 bg-[#00e5a0] text-[#0a0a0f] rounded-lg text-sm font-semibold">
-              Save Job
-            </button>
-            <button type="button" onClick={() => setShowJobForm(false)} className="px-4 py-2 text-sm text-[#6b7280]">
+          <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+            <button type="submit" className="btn-primary">Save Job</button>
+            <button type="button" onClick={() => setShowJobForm(false)}
+              style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>
               Cancel
             </button>
           </div>
@@ -138,90 +103,56 @@ export default function IncomePage() {
 
       {/* Log Shift Form */}
       {showShiftForm && (
-        <form onSubmit={addShift} className="bg-[#111118] border border-[rgba(120,120,200,0.12)] rounded-xl p-6">
-          <h3 className="text-sm font-semibold text-white mb-4">Log Shift</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <form onSubmit={addShift} className="card">
+          <div style={{ fontSize: '13px', fontWeight: 600, color: '#e8e8f0', marginBottom: '16px' }}>Log Shift</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
             <div>
-              <label className="block text-xs text-[#6b7280] mb-1">Job</label>
-              <select
-                value={selectedJob}
-                onChange={e => setSelectedJob(e.target.value)}
-                className="w-full bg-[#1a1a24] border border-[rgba(120,120,200,0.12)] rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-[#00e5a0]"
-                required
-              >
+              <label style={{ display: 'block', fontSize: '11px', color: '#6b7280', marginBottom: '6px' }}>Job</label>
+              <select value={selectedJob} onChange={e => setSelectedJob(e.target.value)} className="input" required>
                 <option value="">Select job</option>
-                {jobs.map(j => (
-                  <option key={j.id} value={j.id}>{j.name}</option>
-                ))}
+                {jobs.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-[#6b7280] mb-1">Date</label>
-              <input
-                type="date"
-                value={shiftDate}
-                onChange={e => setShiftDate(e.target.value)}
-                className="w-full bg-[#1a1a24] border border-[rgba(120,120,200,0.12)] rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-[#00e5a0]"
-                required
-              />
+              <label style={{ display: 'block', fontSize: '11px', color: '#6b7280', marginBottom: '6px' }}>Date</label>
+              <input type="date" value={shiftDate} onChange={e => setShiftDate(e.target.value)} className="input" required />
             </div>
             <div>
-              <label className="block text-xs text-[#6b7280] mb-1">Start Time</label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={e => setStartTime(e.target.value)}
-                className="w-full bg-[#1a1a24] border border-[rgba(120,120,200,0.12)] rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-[#00e5a0]"
-                required
-              />
+              <label style={{ display: 'block', fontSize: '11px', color: '#6b7280', marginBottom: '6px' }}>Start</label>
+              <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="input" required />
             </div>
             <div>
-              <label className="block text-xs text-[#6b7280] mb-1">End Time</label>
-              <input
-                type="time"
-                value={endTime}
-                onChange={e => setEndTime(e.target.value)}
-                className="w-full bg-[#1a1a24] border border-[rgba(120,120,200,0.12)] rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-[#00e5a0]"
-                required
-              />
+              <label style={{ display: 'block', fontSize: '11px', color: '#6b7280', marginBottom: '6px' }}>End</label>
+              <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="input" required />
             </div>
           </div>
-          <div className="flex gap-2 mt-4">
-            <button type="submit" className="px-4 py-2 bg-[#00e5a0] text-[#0a0a0f] rounded-lg text-sm font-semibold">
-              Log Shift
-            </button>
-            <button type="button" onClick={() => setShowShiftForm(false)} className="px-4 py-2 text-sm text-[#6b7280]">
+          <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+            <button type="submit" className="btn-primary">Log Shift</button>
+            <button type="button" onClick={() => setShowShiftForm(false)}
+              style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>
               Cancel
             </button>
           </div>
         </form>
       )}
 
-      {/* Jobs list */}
+      {/* Jobs */}
       <div>
-        <h2 className="text-sm font-semibold text-[#6b7280] uppercase tracking-wider mb-3">
-          Your Jobs
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="section-title">Your Jobs</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
           {jobs.map(job => (
-            <div
-              key={job.id}
-              className="bg-[#111118] border border-[rgba(120,120,200,0.12)] rounded-xl p-4 flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: job.color }}
-                />
+            <div key={job.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: job.color, flexShrink: 0 }} />
                 <div>
-                  <div className="text-sm text-white">{job.name}</div>
-                  <div className="text-xs text-[#6b7280]">${job.hourly_rate}/hr</div>
+                  <div style={{ fontSize: '13px', color: '#e8e8f0' }}>{job.name}</div>
+                  <div style={{ fontSize: '11px', color: '#6b7280' }}>${job.hourly_rate}/hr</div>
                 </div>
               </div>
-              <button
-                onClick={() => deleteJob(job.id)}
-                className="text-[#6b7280] hover:text-red-400 transition-colors"
-              >
+              <button onClick={() => deleteJob(job.id)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: '4px' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}>
                 <Trash2 size={14} />
               </button>
             </div>
@@ -229,42 +160,29 @@ export default function IncomePage() {
         </div>
       </div>
 
-      {/* Shifts list */}
+      {/* Shifts */}
       <div>
-        <h2 className="text-sm font-semibold text-[#6b7280] uppercase tracking-wider mb-3">
-          Recent Shifts
-        </h2>
-        <div className="bg-[#111118] border border-[rgba(120,120,200,0.12)] rounded-xl overflow-hidden">
+        <div className="section-title">Recent Shifts</div>
+        <div className="table-container">
           {shifts.length === 0 ? (
-            <div className="p-8 text-center text-[#6b7280] text-sm">
-              No shifts logged yet. Add your first shift above.
+            <div style={{ padding: '48px', textAlign: 'center', color: '#6b7280', fontSize: '13px' }}>
+              No shifts logged yet.
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <table>
               <thead>
-                <tr className="border-b border-[rgba(120,120,200,0.12)]">
-                  {['Date', 'Hours', 'Earnings', 'Source'].map(h => (
-                    <th key={h} className="text-left text-xs text-[#6b7280] font-medium px-4 py-3">
-                      {h}
-                    </th>
-                  ))}
+                <tr>
+                  <th>Date</th><th>Hours</th><th>Earnings</th><th>Source</th>
                 </tr>
               </thead>
               <tbody>
                 {shifts.map(shift => (
-                  <tr
-                    key={shift.id}
-                    className="border-b border-[rgba(120,120,200,0.06)] hover:bg-[rgba(255,255,255,0.02)] transition-colors"
-                  >
-                    <td className="px-4 py-3 text-[#9090a8]">{formatDate(shift.date)}</td>
-                    <td className="px-4 py-3 text-white">{shift.hours_worked}h</td>
-                    <td className="px-4 py-3 text-[#00e5a0] font-medium">
-                      {formatCurrency(shift.earnings)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-[#1a1a24] text-[#6b7280]">
-                        {shift.source}
-                      </span>
+                  <tr key={shift.id}>
+                    <td>{formatDate(shift.date)}</td>
+                    <td style={{ color: '#e8e8f0' }}>{shift.hours_worked}h</td>
+                    <td style={{ color: '#00e5a0', fontWeight: 500 }}>{formatCurrency(shift.earnings)}</td>
+                    <td>
+                      <span className="badge" style={{ background: '#1a1a24', color: '#6b7280' }}>{shift.source}</span>
                     </td>
                   </tr>
                 ))}

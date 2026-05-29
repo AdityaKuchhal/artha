@@ -3,10 +3,7 @@
 import { useEffect, useState } from 'react'
 import { api, EarningsSummary, SpendingSummary } from '@/lib/api'
 import { formatCurrency, getCategoryColor } from '@/lib/utils'
-import {
-  PieChart, Pie, Tooltip,
-  ResponsiveContainer,
-} from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -18,74 +15,78 @@ export default function DashboardPage() {
     Promise.all([
       api.shifts.earnings('monthly'),
       api.transactions.summary('monthly'),
-    ]).then(([e, s]) => {
-      setEarnings(e)
-      setSpending(s)
-    }).catch(console.error)
+    ]).then(([e, s]) => { setEarnings(e); setSpending(s) })
+      .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
 
   const netPosition = (earnings?.total_earnings || 0) - (spending?.total_spent || 0)
 
-  if (loading) return <LoadingState />
+  if (loading) return (
+    <div style={{ padding: '32px' }}>
+      <div style={{ color: '#6b7280', fontSize: '13px' }}>Loading...</div>
+    </div>
+  )
 
   return (
-    <div className="p-8 space-y-8">
+    <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">Overview</h1>
-        <p className="text-[#6b7280] text-sm mt-1">
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#e8e8f0', marginBottom: '4px' }}>Overview</h1>
+        <p style={{ fontSize: '13px', color: '#6b7280' }}>
           {new Date().toLocaleDateString('en-CA', { month: 'long', year: 'numeric' })}
         </p>
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
         <StatCard
           label="Earned this month"
           value={formatCurrency(earnings?.total_earnings || 0)}
           sub={`${earnings?.total_hours || 0} hours worked`}
-          icon={<TrendingUp size={18} className="text-[#00e5a0]" />}
-          accent="green"
+          valueColor="#00e5a0"
+          icon={<TrendingUp size={16} color="#00e5a0" />}
         />
         <StatCard
           label="Spent this month"
           value={formatCurrency(spending?.total_spent || 0)}
           sub={`${spending?.by_category.length || 0} categories`}
-          icon={<TrendingDown size={18} className="text-red-400" />}
-          accent="red"
+          valueColor="#f87171"
+          icon={<TrendingDown size={16} color="#f87171" />}
         />
         <StatCard
           label="Net position"
           value={formatCurrency(netPosition)}
           sub={netPosition >= 0 ? 'Ahead this month' : 'Behind this month'}
-          icon={<DollarSign size={18} className={netPosition >= 0 ? 'text-[#00e5a0]' : 'text-red-400'} />}
-          accent={netPosition >= 0 ? 'green' : 'red'}
+          valueColor={netPosition >= 0 ? '#00e5a0' : '#f87171'}
+          icon={<DollarSign size={16} color={netPosition >= 0 ? '#00e5a0' : '#f87171'} />}
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
         {/* Earnings by job */}
         {earnings && earnings.by_job.length > 0 && (
-          <div className="bg-[#111118] border border-[rgba(120,120,200,0.12)] rounded-xl p-6">
-            <h2 className="text-sm font-semibold text-white mb-4">Earnings by Job</h2>
-            <div className="space-y-3">
+          <div className="card">
+            <div style={{ fontSize: '13px', fontWeight: 600, color: '#e8e8f0', marginBottom: '16px' }}>
+              Earnings by Job
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {earnings.by_job.map((job) => (
                 <div key={job.job_id}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-[#9090a8]">{job.job_name}</span>
-                    <span className="text-white">{formatCurrency(job.earnings)}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                    <span style={{ color: '#9090a8' }}>{job.job_name}</span>
+                    <span style={{ color: '#e8e8f0' }}>{formatCurrency(job.earnings)}</span>
                   </div>
-                  <div className="h-1.5 bg-[#1a1a24] rounded-full overflow-hidden">
+                  <div className="progress-bar">
                     <div
-                      className="h-full rounded-full transition-all"
+                      className="progress-fill"
                       style={{
                         width: `${(job.earnings / (earnings.total_earnings || 1)) * 100}%`,
                         backgroundColor: job.color || '#00e5a0',
                       }}
                     />
                   </div>
-                  <div className="text-xs text-[#6b7280] mt-1">
+                  <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
                     {job.hours}h · {job.shifts} shifts
                   </div>
                 </div>
@@ -96,21 +97,23 @@ export default function DashboardPage() {
 
         {/* Spending by category */}
         {spending && spending.by_category.length > 0 && (
-          <div className="bg-[#111118] border border-[rgba(120,120,200,0.12)] rounded-xl p-6">
-            <h2 className="text-sm font-semibold text-white mb-4">Spending by Category</h2>
-            <ResponsiveContainer width="100%" height={200}>
+          <div className="card">
+            <div style={{ fontSize: '13px', fontWeight: 600, color: '#e8e8f0', marginBottom: '16px' }}>
+              Spending by Category
+            </div>
+            <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie
-                  data={spending.by_category
-                    .filter(c => c.total > 0)
-                    .map(c => ({ ...c, fill: getCategoryColor(c.category) }))}
+                  data={spending.by_category.filter(c => c.total > 0)}
                   dataKey="total"
                   nameKey="category"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  innerRadius={40}
-                />
+                  cx="50%" cy="50%"
+                  outerRadius={75} innerRadius={35}
+                >
+                  {spending.by_category.filter(c => c.total > 0).map((entry) => (
+                    <Cell key={entry.category} fill={getCategoryColor(entry.category)} />
+                  ))}
+                </Pie>
                 <Tooltip
                   formatter={(val) => typeof val === 'number' ? formatCurrency(val) : ''}
                   contentStyle={{
@@ -118,23 +121,19 @@ export default function DashboardPage() {
                     border: '1px solid rgba(120,120,200,0.12)',
                     borderRadius: '8px',
                     fontSize: '12px',
+                    fontFamily: 'JetBrains Mono',
                   }}
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div className="space-y-1 mt-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
               {spending.by_category.slice(0, 5).map((cat) => (
-                <div key={cat.category} className="flex justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: getCategoryColor(cat.category) }}
-                    />
-                    <span className="text-[#9090a8]">
-                      {cat.category.replace(/_/g, ' ')}
-                    </span>
+                <div key={cat.category} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: getCategoryColor(cat.category), flexShrink: 0 }} />
+                    <span style={{ color: '#9090a8' }}>{cat.category.replace(/_/g, ' ')}</span>
                   </div>
-                  <span className="text-white">{formatCurrency(cat.total)}</span>
+                  <span style={{ color: '#e8e8f0' }}>{formatCurrency(cat.total)}</span>
                 </div>
               ))}
             </div>
@@ -145,40 +144,17 @@ export default function DashboardPage() {
   )
 }
 
-function StatCard({
-  label, value, sub, icon, accent
-}: {
-  label: string
-  value: string
-  sub: string
-  icon: React.ReactNode
-  accent: 'green' | 'red'
+function StatCard({ label, value, sub, valueColor, icon }: {
+  label: string; value: string; sub: string; valueColor: string; icon: React.ReactNode
 }) {
   return (
-    <div className="bg-[#111118] border border-[rgba(120,120,200,0.12)] rounded-xl p-5">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-[#6b7280]">{label}</span>
+    <div className="card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <span style={{ fontSize: '12px', color: '#6b7280' }}>{label}</span>
         {icon}
       </div>
-      <div className={`text-2xl font-bold ${accent === 'green' ? 'text-[#00e5a0]' : 'text-red-400'}`}>
-        {value}
-      </div>
-      <div className="text-xs text-[#6b7280] mt-1">{sub}</div>
-    </div>
-  )
-}
-
-function LoadingState() {
-  return (
-    <div className="p-8">
-      <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-[#1a1a24] rounded w-48" />
-        <div className="grid grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-28 bg-[#1a1a24] rounded-xl" />
-          ))}
-        </div>
-      </div>
+      <div style={{ fontSize: '24px', fontWeight: 700, color: valueColor, marginBottom: '4px' }}>{value}</div>
+      <div style={{ fontSize: '12px', color: '#6b7280' }}>{sub}</div>
     </div>
   )
 }

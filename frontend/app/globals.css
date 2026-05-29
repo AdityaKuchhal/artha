@@ -1,24 +1,193 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --bg: #0a0a0f;
-  --bg2: #111118;
-  --bg3: #1a1a24;
-  --accent: #00e5a0;
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background-color: var(--bg);
+  background-color: #0a0a0f;
   color: #e8e8f0;
   font-family: 'JetBrains Mono', monospace;
 }
 
-@layer utilities {
-  .glass {
-    background: rgba(17, 17, 24, 0.8);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(120, 120, 200, 0.12);
-  }
+.card {
+  background-color: #111118;
+  border: 1px solid rgba(120, 120, 200, 0.12);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background-color: #111118;
+  border-right: 1px solid rgba(120, 120, 200, 0.12);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+}
+
+.main-content {
+  margin-left: 240px;
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #6b7280;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.nav-link:hover {
+  color: #e8e8f0;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.nav-link.active {
+  color: #00e5a0;
+  background-color: rgba(0, 229, 160, 0.1);
+  border: 1px solid rgba(0, 229, 160, 0.2);
+}
+
+.stat-card {
+  background-color: #111118;
+  border: 1px solid rgba(120, 120, 200, 0.12);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: #00e5a0;
+  color: #0a0a0f;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.btn-primary:hover { background-color: #00b87a; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: transparent;
+  color: #9090a8;
+  border: 1px solid rgba(120, 120, 200, 0.2);
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.btn-secondary:hover { color: #e8e8f0; border-color: rgba(120, 120, 200, 0.4); }
+
+.input {
+  width: 100%;
+  background-color: #1a1a24;
+  border: 1px solid rgba(120, 120, 200, 0.12);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #e8e8f0;
+  outline: none;
+  font-family: 'JetBrains Mono', monospace;
+  transition: border-color 0.15s;
+}
+
+.input:focus { border-color: #00e5a0; }
+
+.table-container {
+  background-color: #111118;
+  border: 1px solid rgba(120, 120, 200, 0.12);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+th {
+  text-align: left;
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(120, 120, 200, 0.12);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+td {
+  padding: 12px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(120, 120, 200, 0.06);
+  color: #9090a8;
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
+
+.badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+}
+
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 229, 160, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 160, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.section-title {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.progress-bar {
+  height: 6px;
+  background-color: #1a1a24;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
 }

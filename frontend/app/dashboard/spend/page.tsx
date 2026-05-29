@@ -9,76 +9,54 @@ export default function SpendPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [summary, setSummary] = useState<SpendingSummary | null>(null)
   const [syncing, setSyncing] = useState(false)
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      api.transactions.list(),
-      api.transactions.summary('monthly'),
-    ]).then(([t, s]) => {
-      setTransactions(t)
-      setSummary(s)
-    }).catch(console.error)
-      .finally(() => setLoading(false))
+    Promise.all([api.transactions.list(), api.transactions.summary('monthly')])
+      .then(([t, s]) => { setTransactions(t); setSummary(s) })
+      .catch(console.error)
   }, [])
 
   async function syncTransactions() {
     setSyncing(true)
     try {
       await api.plaid.sync(30)
-      const [t, s] = await Promise.all([
-        api.transactions.list(),
-        api.transactions.summary('monthly'),
-      ])
-      setTransactions(t)
-      setSummary(s)
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setSyncing(false)
-    }
+      const [t, s] = await Promise.all([api.transactions.list(), api.transactions.summary('monthly')])
+      setTransactions(t); setSummary(s)
+    } catch (e) { console.error(e) }
+    finally { setSyncing(false) }
   }
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
+    <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Spending</h1>
-          <p className="text-[#6b7280] text-sm mt-1">
-            {summary ? formatCurrency(summary.total_spent) + ' this month' : 'Loading...'}
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#e8e8f0', marginBottom: '4px' }}>Spending</h1>
+          <p style={{ fontSize: '13px', color: '#6b7280' }}>
+            {summary ? formatCurrency(summary.total_spent) + ' this month' : '—'}
           </p>
         </div>
-        <button
-          onClick={syncTransactions}
-          disabled={syncing}
-          className="flex items-center gap-2 px-4 py-2 bg-[#00e5a0] text-[#0a0a0f] rounded-lg text-sm font-semibold hover:bg-[#00b87a] transition-colors disabled:opacity-50"
-        >
-          <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+        <button className="btn-primary" onClick={syncTransactions} disabled={syncing}>
+          <RefreshCw size={13} style={{ animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
           {syncing ? 'Syncing...' : 'Sync Bank'}
         </button>
       </div>
 
       {/* Category breakdown */}
       {summary && summary.by_category.length > 0 && (
-        <div className="bg-[#111118] border border-[rgba(120,120,200,0.12)] rounded-xl p-6">
-          <h2 className="text-sm font-semibold text-white mb-4">This Month</h2>
-          <div className="space-y-3">
+        <div className="card">
+          <div style={{ fontSize: '13px', fontWeight: 600, color: '#e8e8f0', marginBottom: '16px' }}>This Month</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {summary.by_category.filter(c => c.total > 0).map(cat => (
               <div key={cat.category}>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-[#9090a8]">
-                    {cat.category.replace(/_/g, ' ')}
-                  </span>
-                  <span className="text-white">{formatCurrency(cat.total)}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                  <span style={{ color: '#9090a8' }}>{cat.category.replace(/_/g, ' ')}</span>
+                  <span style={{ color: '#e8e8f0' }}>{formatCurrency(cat.total)}</span>
                 </div>
-                <div className="h-1.5 bg-[#1a1a24] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${(cat.total / (summary.total_spent || 1)) * 100}%`,
-                      backgroundColor: getCategoryColor(cat.category),
-                    }}
-                  />
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{
+                    width: `${(cat.total / (summary.total_spent || 1)) * 100}%`,
+                    backgroundColor: getCategoryColor(cat.category),
+                  }} />
                 </div>
               </div>
             ))}
@@ -86,54 +64,38 @@ export default function SpendPage() {
         </div>
       )}
 
-      {/* Transactions table */}
+      {/* Transactions */}
       <div>
-        <h2 className="text-sm font-semibold text-[#6b7280] uppercase tracking-wider mb-3">
-          Transactions
-        </h2>
-        <div className="bg-[#111118] border border-[rgba(120,120,200,0.12)] rounded-xl overflow-hidden">
+        <div className="section-title">Transactions</div>
+        <div className="table-container">
           {transactions.length === 0 ? (
-            <div className="p-8 text-center text-[#6b7280] text-sm">
-              No transactions yet. Click Sync Bank to fetch from Plaid.
+            <div style={{ padding: '48px', textAlign: 'center', color: '#6b7280', fontSize: '13px' }}>
+              No transactions. Click Sync Bank to fetch from Plaid.
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <table>
               <thead>
-                <tr className="border-b border-[rgba(120,120,200,0.12)]">
-                  {['Date', 'Merchant', 'Category', 'Amount'].map(h => (
-                    <th key={h} className="text-left text-xs text-[#6b7280] font-medium px-4 py-3">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
+                <tr><th>Date</th><th>Merchant</th><th>Category</th><th>Amount</th></tr>
               </thead>
               <tbody>
                 {transactions.map(txn => (
-                  <tr
-                    key={txn.id}
-                    className="border-b border-[rgba(120,120,200,0.06)] hover:bg-[rgba(255,255,255,0.02)]"
-                  >
-                    <td className="px-4 py-3 text-[#9090a8]">{formatDate(txn.date)}</td>
-                    <td className="px-4 py-3 text-white">
+                  <tr key={txn.id}>
+                    <td>{formatDate(txn.date)}</td>
+                    <td style={{ color: '#e8e8f0' }}>
                       {txn.merchant_name}
                       {txn.is_subscription && (
-                        <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-purple-900/30 text-purple-400">
-                          sub
-                        </span>
+                        <span className="badge" style={{ marginLeft: '8px', background: 'rgba(168,85,247,0.15)', color: '#a855f7' }}>sub</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className="text-xs px-2 py-0.5 rounded-full"
-                        style={{
-                          backgroundColor: getCategoryColor(txn.ai_category) + '20',
-                          color: getCategoryColor(txn.ai_category),
-                        }}
-                      >
+                    <td>
+                      <span className="badge" style={{
+                        backgroundColor: getCategoryColor(txn.ai_category) + '20',
+                        color: getCategoryColor(txn.ai_category),
+                      }}>
                         {txn.ai_category?.replace(/_/g, ' ') || 'Unknown'}
                       </span>
                     </td>
-                    <td className={`px-4 py-3 font-medium ${txn.amount < 0 ? 'text-[#00e5a0]' : 'text-white'}`}>
+                    <td style={{ color: txn.amount < 0 ? '#00e5a0' : '#e8e8f0', fontWeight: 500 }}>
                       {txn.amount < 0 ? '+' : ''}{formatCurrency(Math.abs(txn.amount))}
                     </td>
                   </tr>

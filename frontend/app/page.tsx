@@ -35,71 +35,101 @@ export default function AuthPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4">
-      {/* Grid background */}
-      <div className="fixed inset-0 bg-[linear-gradient(rgba(0,229,160,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,160,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
+    <main style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '16px',
+    }}>
+      <div className="grid-bg" />
 
-      <div className="relative w-full max-w-sm">
+      <div style={{ position: 'relative', width: '100%', maxWidth: '360px' }}>
         {/* Logo */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-12 h-12 border border-[#00e5a0] rounded-xl text-[#00e5a0] font-bold text-lg mb-4">
-            A
-          </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Artha</h1>
-          <p className="text-[#6b7280] text-sm mt-1">Wealth with purpose</p>
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '48px', height: '48px',
+            border: '1px solid #00e5a0',
+            borderRadius: '12px',
+            color: '#00e5a0',
+            fontWeight: 700,
+            fontSize: '18px',
+            marginBottom: '16px',
+          }}>A</div>
+          <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#e8e8f0', margin: 0 }}>Artha</h1>
+          <p style={{ color: '#6b7280', fontSize: '13px', marginTop: '4px' }}>Wealth with purpose</p>
         </div>
 
         {/* Card */}
-        <div className="glass rounded-2xl p-8">
-          <div className="flex gap-2 mb-6">
+        <div className="card" style={{ borderRadius: '16px' }}>
+          {/* Mode toggle */}
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            marginBottom: '24px',
+            background: '#1a1a24',
+            padding: '4px',
+            borderRadius: '10px',
+          }}>
             {(['signin', 'signup'] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className={`flex-1 py-2 rounded-lg text-sm transition-all ${
-                  mode === m
-                    ? 'bg-[#00e5a0] text-[#0a0a0f] font-semibold'
-                    : 'text-[#6b7280] hover:text-white'
-                }`}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  borderRadius: '7px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontFamily: 'inherit',
+                  fontWeight: mode === m ? 600 : 400,
+                  background: mode === m ? '#00e5a0' : 'transparent',
+                  color: mode === m ? '#0a0a0f' : '#6b7280',
+                  transition: 'all 0.15s',
+                }}
               >
                 {m === 'signin' ? 'Sign In' : 'Sign Up'}
               </button>
             ))}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <label className="block text-xs text-[#6b7280] mb-1">Email</label>
+              <label style={{ display: 'block', fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>
+                Email
+              </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#1a1a24] border border-[rgba(120,120,200,0.12)] rounded-lg px-4 py-3 text-sm text-white outline-none focus:border-[#00e5a0] transition-colors"
+                className="input"
                 placeholder="you@example.com"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs text-[#6b7280] mb-1">Password</label>
+              <label style={{ display: 'block', fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>
+                Password
+              </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#1a1a24] border border-[rgba(120,120,200,0.12)] rounded-lg px-4 py-3 text-sm text-white outline-none focus:border-[#00e5a0] transition-colors"
+                className="input"
                 placeholder="••••••••"
                 required
               />
             </div>
 
             {error && (
-              <p className="text-red-400 text-xs">{error}</p>
+              <p style={{ color: '#f87171', fontSize: '12px', margin: 0 }}>{error}</p>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#00e5a0] text-[#0a0a0f] font-semibold py-3 rounded-lg text-sm hover:bg-[#00b87a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
               {loading ? 'Loading...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
             </button>
           </form>
