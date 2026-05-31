@@ -4,40 +4,50 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
+import { ThemeProvider, useTheme } from '@/lib/theme'
 import {
-  LayoutDashboard,
-  Briefcase,
-  CreditCard,
-  FileText,
-  LogOut,
+  LayoutDashboard, CreditCard, ArrowLeftRight,
+  TrendingUp, PieChart, Zap, LogOut,
+  ChevronLeft, ChevronRight, Sun, Moon, Menu
 } from 'lucide-react'
 
-const nav = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/dashboard/income', label: 'Income', icon: Briefcase },
-  { href: '/dashboard/spend', label: 'Spending', icon: CreditCard },
-  { href: '/dashboard/report', label: 'Report', icon: FileText },
+const NAV = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/cards', label: 'Cards', icon: CreditCard },
+  { href: '/dashboard/transactions', label: 'Transactions', icon: ArrowLeftRight },
+  { href: '/dashboard/cashflow', label: 'Cash Flow', icon: TrendingUp },
+  { href: '/dashboard/budget', label: 'Budget', icon: PieChart },
+  { href: '/dashboard/report', label: 'AI Report', icon: Zap },
 ]
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+function DashboardInner({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
+  const { theme, toggle } = useTheme()
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [userEmail, setUserEmail] = useState('')
+  const [isMobile, setIsMobile] = useState(false)
   const supabase = createClient()
+
+  const currentPage = NAV.find(n => n.href === pathname)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
-        router.push('/')
-      } else {
-        setUserEmail(data.session.user.email || '')
-      }
+      if (!data.session) router.push('/')
+      else setUserEmail(data.session.user.email || '')
     })
   }, [])
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  const isCollapsed = isMobile ? !mobileOpen : collapsed
+  const initials = userEmail ? userEmail[0].toUpperCase() : 'A'
 
   async function signOut() {
     await supabase.auth.signOut()
@@ -45,64 +55,110 @@ export default function DashboardLayout({
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0a0a0f' }}>
-      <div className="grid-bg" />
+    <div className="app-layout">
+      <div className="glow-bg" />
 
       {/* Sidebar */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
         {/* Logo */}
-        <div style={{ padding: '24px', borderBottom: '1px solid rgba(120,120,200,0.12)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '32px', height: '32px',
-              border: '1px solid #00e5a0',
-              borderRadius: '8px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#00e5a0', fontWeight: 700, fontSize: '14px',
-            }}>A</div>
-            <div>
-              <div style={{ color: '#e8e8f0', fontWeight: 600, fontSize: '14px' }}>Artha</div>
-              <div style={{ color: '#6b7280', fontSize: '11px' }}>Wealth with purpose</div>
-            </div>
-          </div>
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-icon">A</div>
+          {!isCollapsed && <span className="sidebar-logo-text">Artha</span>}
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {nav.map(({ href, label, icon: Icon }) => {
+        <nav className="sidebar-nav">
+          {NAV.map(({ href, label, icon: Icon }) => {
             const active = pathname === href
             return (
-              <Link key={href} href={href} className={`nav-link ${active ? 'active' : ''}`}>
-                <Icon size={15} />
-                {label}
+              <Link
+                key={href}
+                href={href}
+                className={`nav-item ${active ? 'active' : ''}`}
+                title={isCollapsed ? label : undefined}
+              >
+                <span className="nav-item-icon"><Icon size={18} /></span>
+                {!isCollapsed && label}
               </Link>
             )
           })}
         </nav>
 
-        {/* User */}
-        <div style={{ padding: '16px', borderTop: '1px solid rgba(120,120,200,0.12)' }}>
-          <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {userEmail}
-          </div>
-          <button onClick={signOut} style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            fontSize: '12px', color: '#6b7280', background: 'none',
-            border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-          }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+        {/* Footer */}
+        <div className="sidebar-footer">
+          {!isCollapsed ? (
+            <div className="user-row">
+              <div className="user-avatar">{initials}</div>
+              <div className="user-info">
+                <div className="user-name">My Account</div>
+                <div className="user-email">{userEmail}</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div className="user-avatar">{initials}</div>
+            </div>
+          )}
+          <button
+            onClick={signOut}
+            className="nav-item"
+            style={{ marginTop: '4px', color: 'var(--text3)', width: '100%' }}
+            title={isCollapsed ? 'Sign out' : undefined}
           >
-            <LogOut size={13} />
-            Sign out
+            <span className="nav-item-icon"><LogOut size={16} /></span>
+            {!isCollapsed && 'Sign out'}
           </button>
         </div>
       </aside>
 
-      {/* Content */}
-      <main className="main-content" style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+      {/* Header */}
+      <header className={`header ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
+        <div className="header-left">
+          {/* Collapse toggle */}
+          <button
+            className="collapse-btn"
+            onClick={() => isMobile ? setMobileOpen(!mobileOpen) : setCollapsed(!collapsed)}
+            title="Toggle sidebar"
+          >
+            {isMobile
+              ? <Menu size={16} />
+              : isCollapsed
+                ? <ChevronRight size={16} />
+                : <ChevronLeft size={16} />
+            }
+          </button>
+
+          <div>
+            <div className="header-title">{currentPage?.label || 'Artha'}</div>
+            <div className="header-sub">
+              {new Date().toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            </div>
+          </div>
+        </div>
+
+        <div className="header-right">
+          {/* Theme toggle */}
+          <button className="theme-btn" onClick={toggle} title="Toggle theme">
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+
+          {/* User avatar */}
+          <div className="user-avatar" style={{ cursor: 'default' }}>{initials}</div>
+        </div>
+      </header>
+
+      {/* Main */}
+      <main className={`main ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
         {children}
       </main>
     </div>
+  )
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeProvider>
+      <DashboardInner>{children}</DashboardInner>
+    </ThemeProvider>
   )
 }

@@ -3,158 +3,248 @@
 import { useEffect, useState } from 'react'
 import { api, EarningsSummary, SpendingSummary } from '@/lib/api'
 import { formatCurrency, getCategoryColor } from '@/lib/utils'
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
-import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, Cell
+} from 'recharts'
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight } from 'lucide-react'
 
 export default function DashboardPage() {
   const [earnings, setEarnings] = useState<EarningsSummary | null>(null)
   const [spending, setSpending] = useState<SpendingSummary | null>(null)
+  const [weeklyEarnings, setWeeklyEarnings] = useState<EarningsSummary | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     Promise.all([
       api.shifts.earnings('monthly'),
       api.transactions.summary('monthly'),
-    ]).then(([e, s]) => { setEarnings(e); setSpending(s) })
-      .catch(console.error)
+      api.shifts.earnings('weekly'),
+    ]).then(([e, s, w]) => {
+      setEarnings(e)
+      setSpending(s)
+      setWeeklyEarnings(w)
+    }).catch(console.error)
       .finally(() => setLoading(false))
   }, [])
 
   const netPosition = (earnings?.total_earnings || 0) - (spending?.total_spent || 0)
+  const isPositive = netPosition >= 0
+
+  // Build weekly bar chart data from shifts
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  const today = new Date().getDay()
+  const todayIndex = today === 0 ? 6 : today - 1
+
+  const barData = days.map((day, i) => ({
+    day,
+    amount: i === todayIndex ? (weeklyEarnings?.total_earnings || 0) : 0,
+    isToday: i === todayIndex,
+  }))
 
   if (loading) return (
-    <div style={{ padding: '32px' }}>
-      <div style={{ color: '#6b7280', fontSize: '13px' }}>Loading...</div>
+    <div className="page">
+      <div style={{ color: 'var(--text3)', fontSize: '13px' }}>Loading...</div>
     </div>
   )
 
   return (
-    <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      {/* Header */}
-      <div>
-        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#e8e8f0', marginBottom: '4px' }}>Overview</h1>
-        <p style={{ fontSize: '13px', color: '#6b7280' }}>
-          {new Date().toLocaleDateString('en-CA', { month: 'long', year: 'numeric' })}
-        </p>
-      </div>
-
-      {/* Stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+    <div className="page fade-up">
+      {/* Top stat cards */}
+      <div className="grid-3">
         <StatCard
-          label="Earned this month"
+          title="Earned This Month"
           value={formatCurrency(earnings?.total_earnings || 0)}
-          sub={`${earnings?.total_hours || 0} hours worked`}
-          valueColor="#00e5a0"
-          icon={<TrendingUp size={16} color="#00e5a0" />}
+          sub={`${earnings?.total_hours || 0} hours · ${earnings?.shift_count || 0} shifts`}
+          badge={{ label: '+' + formatCurrency(weeklyEarnings?.total_earnings || 0) + ' this week', type: 'green' }}
+          icon={<TrendingUp size={18} />}
+          iconColor="var(--green)"
         />
         <StatCard
-          label="Spent this month"
+          title="Spent This Month"
           value={formatCurrency(spending?.total_spent || 0)}
-          sub={`${spending?.by_category.length || 0} categories`}
-          valueColor="#f87171"
-          icon={<TrendingDown size={16} color="#f87171" />}
+          sub={`${spending?.by_category.length || 0} categories tracked`}
+          badge={{ label: 'Plaid synced', type: 'blue' }}
+          icon={<TrendingDown size={18} />}
+          iconColor="var(--red)"
         />
         <StatCard
-          label="Net position"
-          value={formatCurrency(netPosition)}
-          sub={netPosition >= 0 ? 'Ahead this month' : 'Behind this month'}
-          valueColor={netPosition >= 0 ? '#00e5a0' : '#f87171'}
-          icon={<DollarSign size={16} color={netPosition >= 0 ? '#00e5a0' : '#f87171'} />}
+          title="Net Position"
+          value={(isPositive ? '' : '-') + formatCurrency(Math.abs(netPosition))}
+          sub={isPositive ? 'Ahead this month' : 'Behind this month'}
+          badge={{ label: isPositive ? 'Positive' : 'Negative', type: isPositive ? 'green' : 'red' }}
+          icon={<Wallet size={18} />}
+          iconColor={isPositive ? 'var(--green)' : 'var(--red)'}
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-        {/* Earnings by job */}
-        {earnings && earnings.by_job.length > 0 && (
-          <div className="card">
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#e8e8f0', marginBottom: '16px' }}>
-              Earnings by Job
+      {/* Middle row */}
+      <div className="grid-2-1">
+        {/* Weekly earnings bar chart */}
+        <div className="card">
+          <div className="card-title">Weekly Earnings Overview</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text3)' }}>Earned so far today</div>
+              <div style={{ fontSize: '36px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-1.5px', lineHeight: 1.1 }}>
+                {formatCurrency(weeklyEarnings?.total_earnings || 0)}
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {earnings.by_job.map((job) => (
-                <div key={job.job_id}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
-                    <span style={{ color: '#9090a8' }}>{job.job_name}</span>
-                    <span style={{ color: '#e8e8f0' }}>{formatCurrency(job.earnings)}</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div
-                      className="progress-fill"
-                      style={{
-                        width: `${(job.earnings / (earnings.total_earnings || 1)) * 100}%`,
-                        backgroundColor: job.color || '#00e5a0',
-                      }}
-                    />
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
-                    {job.hours}h · {job.shifts} shifts
-                  </div>
-                </div>
-              ))}
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text3)' }}>Projected monthly</div>
+              <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--accent)', letterSpacing: '-0.5px' }}>
+                {formatCurrency((weeklyEarnings?.total_earnings || 0) * 4)}
+              </div>
             </div>
           </div>
-        )}
 
-        {/* Spending by category */}
-        {spending && spending.by_category.length > 0 && (
-          <div className="card">
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#e8e8f0', marginBottom: '16px' }}>
-              Spending by Category
-            </div>
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie
-                  data={spending.by_category.filter(c => c.total > 0)}
-                  dataKey="total"
-                  nameKey="category"
-                  cx="50%" cy="50%"
-                  outerRadius={75} innerRadius={35}
-                >
-                  {spending.by_category.filter(c => c.total > 0).map((entry) => (
-                    <Cell key={entry.category} fill={getCategoryColor(entry.category)} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(val) => typeof val === 'number' ? formatCurrency(val) : ''}
-                  contentStyle={{
-                    background: '#1a1a24',
-                    border: '1px solid rgba(120,120,200,0.12)',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontFamily: 'JetBrains Mono',
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
-              {spending.by_category.slice(0, 5).map((cat) => (
-                <div key={cat.category} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: getCategoryColor(cat.category), flexShrink: 0 }} />
-                    <span style={{ color: '#9090a8' }}>{cat.category.replace(/_/g, ' ')}</span>
-                  </div>
-                  <span style={{ color: '#e8e8f0' }}>{formatCurrency(cat.total)}</span>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={barData} barSize={32} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <XAxis
+                dataKey="day"
+                tick={{ fontSize: 11, fill: 'var(--text3)', fontFamily: 'DM Sans' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: 'var(--text3)', fontFamily: 'DM Sans' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={v => v === 0 ? '0' : `${v/1000}K`}
+              />
+              <Tooltip
+                formatter={(v) => [typeof v === 'number' ? formatCurrency(v) : '', 'Earned']}
+                contentStyle={{
+                  background: 'var(--bg2)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '10px',
+                  fontSize: '12px',
+                  fontFamily: 'DM Sans',
+                  color: 'var(--text)',
+                }}
+                cursor={{ fill: 'rgba(59,130,246,0.05)' }}
+              />
+              <Bar dataKey="amount" radius={[6, 6, 0, 0]}>
+                {barData.map((entry, i) => (
+                  <Cell
+                    key={i}
+                    fill={entry.isToday ? 'var(--accent)' : 'var(--bg3)'}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Spending breakdown */}
+        <div className="card">
+          <div className="card-title">Spending Breakdown</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {(spending?.by_category || []).filter(c => c.total > 0).slice(0, 6).map(cat => (
+              <div key={cat.category}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text2)' }}>
+                    {cat.category.replace(/_/g, ' ')}
+                  </span>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text)' }}>
+                    {formatCurrency(cat.total)}
+                  </span>
                 </div>
-              ))}
-            </div>
+                <div className="progress-bar">
+                  <div
+                    className="progress-fill"
+                    style={{
+                      width: `${Math.min((cat.total / (spending?.total_spent || 1)) * 100, 100)}%`,
+                      background: getCategoryColor(cat.category),
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+      </div>
+
+      {/* Bottom row — recent transactions */}
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div className="card-title" style={{ margin: 0 }}>Recent Transactions</div>
+          <a href="/dashboard/transactions" style={{ fontSize: '12px', color: 'var(--accent)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            View all <ArrowUpRight size={13} />
+          </a>
+        </div>
+        <RecentTransactions />
       </div>
     </div>
   )
 }
 
-function StatCard({ label, value, sub, valueColor, icon }: {
-  label: string; value: string; sub: string; valueColor: string; icon: React.ReactNode
+function StatCard({ title, value, sub, badge, icon, iconColor }: {
+  title: string
+  value: string
+  sub: string
+  badge: { label: string; type: 'green' | 'red' | 'blue' }
+  icon: React.ReactNode
+  iconColor: string
 }) {
   return (
     <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <span style={{ fontSize: '12px', color: '#6b7280' }}>{label}</span>
-        {icon}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+        <div className="card-title" style={{ margin: 0 }}>{title}</div>
+        <div style={{ color: iconColor, opacity: 0.8 }}>{icon}</div>
       </div>
-      <div style={{ fontSize: '24px', fontWeight: 700, color: valueColor, marginBottom: '4px' }}>{value}</div>
-      <div style={{ fontSize: '12px', color: '#6b7280' }}>{sub}</div>
+      <div className="metric-value">{value}</div>
+      <div className="metric-label">{sub}</div>
+      <div style={{ marginTop: '12px' }}>
+        <span className={`badge-${badge.type}`}>{badge.label}</span>
+      </div>
+    </div>
+  )
+}
+
+function RecentTransactions() {
+  const [transactions, setTransactions] = useState<any[]>([])
+
+  useEffect(() => {
+    api.transactions.list().then(t => setTransactions(t.slice(0, 5))).catch(console.error)
+  }, [])
+
+  if (!transactions.length) return (
+    <div style={{ color: 'var(--text3)', fontSize: '13px', padding: '16px 0' }}>No transactions yet.</div>
+  )
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+      {transactions.map((txn, i) => (
+        <div key={txn.id} style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '12px 0',
+          borderBottom: i < transactions.length - 1 ? '1px solid var(--card-border)' : 'none',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: getCategoryColor(txn.ai_category) + '20',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '14px',
+            }}>
+              {txn.merchant_name?.[0] || '?'}
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>{txn.merchant_name}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text3)' }}>
+                {txn.ai_category?.replace(/_/g, ' ')} · {txn.date}
+              </div>
+            </div>
+          </div>
+          <div style={{
+            fontSize: '14px', fontWeight: 600,
+            color: txn.amount < 0 ? 'var(--green)' : 'var(--text)',
+          }}>
+            {txn.amount < 0 ? '+' : ''}{formatCurrency(Math.abs(txn.amount))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
