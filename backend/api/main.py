@@ -56,3 +56,7 @@ app.include_router(budget_router)
 @app.get("/health", tags=["System"])
 async def health():
     return {"status": "ok", "version": VERSION, "app": "artha"}
+
+
+from mangum import Mangum
+handler = Mangum(app, lifespan="off")
