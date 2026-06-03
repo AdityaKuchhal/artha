@@ -6,14 +6,14 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { ThemeProvider, useTheme } from '@/lib/theme'
 import {
-  LayoutDashboard, CreditCard, ArrowLeftRight,
+  LayoutDashboard, Building2, ArrowLeftRight,
   TrendingUp, PieChart, Zap, LogOut,
   ChevronLeft, ChevronRight, Sun, Moon, Menu
 } from 'lucide-react'
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/cards', label: 'Cards', icon: CreditCard },
+  { href: '/dashboard/cards', label: 'Accounts', icon: Building2 },
   { href: '/dashboard/transactions', label: 'Transactions', icon: ArrowLeftRight },
   { href: '/dashboard/cashflow', label: 'Cash Flow', icon: TrendingUp },
   { href: '/dashboard/budget', label: 'Budget', icon: PieChart },
