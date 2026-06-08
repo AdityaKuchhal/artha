@@ -133,15 +133,15 @@ async def sync_transactions(
     authorization: str = Header(...),
 ):
     """
-    Fetch transactions from Plaid and store in Supabase.
-    Triggers the extraction agent pipeline.
+    Trigger async transaction sync.
+    Returns job_id immediately — poll /reports/status?job_id= for result.
     """
-    user_id = get_user_id(authorization)
-    client = get_plaid_client()
+    from backend.utils.async_invoker import invoke_job_async
 
-    # Get user's linked accounts
+    user_id = get_user_id(authorization)
+
     items = supabase.table("plaid_items")\
-        .select("*")\
+        .select("id")\
         .eq("user_id", user_id)\
         .execute()
 
@@ -151,34 +151,18 @@ async def sync_transactions(
             detail="No linked bank accounts. Connect a bank first."
         )
 
-    all_transactions = []
-    end_date = date.today()
-    start_date = end_date - timedelta(days=days)
+    job = supabase.table("agent_jobs").insert({
+        "user_id": user_id,
+        "job_type": "sync",
+        "status": "pending",
+        "payload": {"days": days},
+    }).execute()
 
-    for item in items.data:
-        try:
-            request = TransactionsGetRequest(
-                access_token=item["access_token"],
-                start_date=start_date,
-                end_date=end_date,
-                options=TransactionsGetRequestOptions(count=500),
-            )
-            response = client.transactions_get(request)
-            all_transactions.extend(response.transactions)
-
-        except Exception as e:
-            logger.error(f"Error fetching transactions for item {item['item_id']}: {e}")
-            continue
-
-    if not all_transactions:
-        return {"synced": 0, "message": "No transactions found"}
-
-    # Run through extraction + categorization agent
-    from backend.agents.extraction_agent import process_transactions
-    synced = process_transactions(user_id, all_transactions)
+    job_id = job.data[0]["id"]
+    invoke_job_async(job_id, user_id, "sync", {"days": days})
 
     return {
-        "synced": synced,
-        "period": f"{start_date} to {end_date}",
-        "accounts": len(items.data),
+        "job_id": job_id,
+        "status": "pending",
+        "message": f"Sync started. Poll /reports/status?job_id={job_id}",
     }

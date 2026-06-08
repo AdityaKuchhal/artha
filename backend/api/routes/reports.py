@@ -1,11 +1,11 @@
 """
-reports.py — Report and workflow trigger endpoints.
+reports.py — Async report trigger and status endpoints.
 """
 
 import logging
 from fastapi import APIRouter, Header, HTTPException, Query
 from backend.db.supabase import supabase
-from backend.orchestrator.workflow import artha_workflow
+from backend.utils.async_invoker import invoke_job_async
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/reports", tags=["Reports"])
@@ -26,90 +26,85 @@ async def run_workflow(
     authorization: str = Header(...),
 ):
     """
-    Trigger the full Artha multi-agent workflow.
-
-    Runs: extract → categorize → analyze → monitor_budget → report
-    Returns the complete analysis and AI-generated report.
+    Trigger the full Artha multi-agent workflow asynchronously.
+    Returns job_id immediately — poll /reports/status for result.
     """
     user_id = get_user_id(authorization)
 
-    initial_state = {
+    job = supabase.table("agent_jobs").insert({
         "user_id": user_id,
-        "transactions": [],
-        "categorized": [],
-        "analysis": {},
-        "budget_alerts": [],
-        "report": "",
-        "errors": [],
-        "sync_period_days": days,
+        "job_type": "report",
+        "status": "pending",
+        "payload": {"days": days},
+    }).execute()
+
+    job_id = job.data[0]["id"]
+    invoke_job_async(job_id, user_id, "report", {"days": days})
+
+    return {
+        "job_id": job_id,
+        "status": "pending",
+        "message": f"Report is being generated. Poll /reports/status?job_id={job_id}",
     }
 
-    try:
-        config = {"configurable": {"thread_id": f"artha_{user_id}"}}
-        result = artha_workflow.invoke(initial_state, config=config)
 
-        return {
-            "status": "success",
-            "user_id": user_id,
-            "transactions_processed": len(result["categorized"]),
-            "total_spent": result["analysis"].get("total_spent", 0),
-            "daily_burn_rate": result["analysis"].get("daily_burn_rate", 0),
-            "top_categories": sorted(
-                result["analysis"].get("by_category", {}).items(),
-                key=lambda x: x[1],
-                reverse=True
-            )[:5],
-            "anomalies": result["analysis"].get("anomalies", []),
-            "budget_alerts": result["budget_alerts"],
-            "report": result["report"],
-            "errors": result["errors"],
-        }
+@router.get("/status")
+async def get_job_status(
+    job_id: str,
+    authorization: str = Header(...),
+):
+    """
+    Poll job status. Returns result inline when complete.
+    Frontend polls every 3s until status is complete or error.
+    """
+    user_id = get_user_id(authorization)
 
-    except Exception as e:
-        logger.error(f"Workflow failed for user {user_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    job = supabase.table("agent_jobs")\
+        .select("*")\
+        .eq("id", job_id)\
+        .eq("user_id", user_id)\
+        .single()\
+        .execute()
+
+    if not job.data:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    data = job.data
+    response = {
+        "job_id": job_id,
+        "status": data["status"],
+        "created_at": data["created_at"],
+        "updated_at": data["updated_at"],
+    }
+
+    if data["status"] == "complete":
+        response.update(data["result"])
+    elif data["status"] == "error":
+        response["error"] = data["error"]
+
+    return response
 
 
 @router.get("/latest")
 async def get_latest_report(authorization: str = Header(...)):
     """
-    Get the latest analysis without re-running the full workflow.
-    Uses cached transactions from Supabase.
+    Get latest completed report without re-running the workflow.
     """
     user_id = get_user_id(authorization)
 
-    from backend.agents.analysis_agent import analyze_spending
-    from backend.agents.budget_monitor_agent import monitor_budgets
-    from backend.agents.report_agent import generate_report
-    from datetime import date
-
-    # Pull this month's transactions from Supabase
-    start_date = date.today().replace(day=1)
-    response = supabase.table("transactions")\
+    job = supabase.table("agent_jobs")\
         .select("*")\
         .eq("user_id", user_id)\
-        .gte("date", str(start_date))\
+        .eq("job_type", "report")\
+        .eq("status", "complete")\
+        .order("created_at", desc=True)\
+        .limit(1)\
         .execute()
 
-    transactions = response.data or []
+    if not job.data:
+        return {"message": "No completed reports found. Run /reports/run first."}
 
-    if not transactions:
-        return {"message": "No transactions found. Run /reports/run first."}
-
-    analysis = analyze_spending(user_id, transactions)
-    alerts = monitor_budgets(user_id, analysis)
-    report = generate_report(user_id, analysis, alerts, transactions)
-
-    return {
-        "period": f"{start_date} to {date.today()}",
-        "total_spent": analysis["total_spent"],
-        "daily_burn_rate": analysis["daily_burn_rate"],
-        "top_categories": sorted(
-            analysis["by_category"].items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:5],
-        "anomalies": analysis["anomalies"],
-        "budget_alerts": alerts,
-        "report": report,
-    }
+    result = job.data[0]["result"]
+    result["job_id"] = job.data[0]["id"]
+    result["generated_at"] = job.data[0]["updated_at"]
+    return result

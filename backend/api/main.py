@@ -15,6 +15,7 @@ from backend.api.routes.plaid import router as plaid_router
 from backend.api.routes.transactions import router as transactions_router
 from backend.api.routes.reports import router as reports_router
 from backend.api.routes.budget import router as budget_router
+from backend.api.routes.jobs_worker import router as jobs_worker_router
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -51,6 +52,7 @@ app.include_router(plaid_router)
 app.include_router(transactions_router)
 app.include_router(reports_router)
 app.include_router(budget_router)
+app.include_router(jobs_worker_router)
 
 
 @app.get("/health", tags=["System"])
