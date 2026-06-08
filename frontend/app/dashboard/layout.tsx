@@ -34,8 +34,10 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) router.push('/')
-      else setUserEmail(data.session.user.email || '')
+      if (!data.session) { router.push('/'); return }
+      const meta = data.session.user.user_metadata
+      const name = meta?.full_name || data.session.user.email || ''
+      setUserEmail(name)
     })
   }, [])
 
@@ -47,7 +49,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   }, [])
 
   const isCollapsed = isMobile ? !mobileOpen : collapsed
-  const initials = userEmail ? userEmail[0].toUpperCase() : 'A'
+  const firstName = userEmail.split(' ')[0]
+  const initials = firstName ? firstName[0].toUpperCase() : 'A'
 
   async function signOut() {
     await supabase.auth.signOut()
@@ -90,7 +93,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             <div className="user-row">
               <div className="user-avatar">{initials}</div>
               <div className="user-info">
-                <div className="user-name">My Account</div>
+                <div className="user-name">{firstName || 'My Account'}</div>
                 <div className="user-email">{userEmail}</div>
               </div>
             </div>
