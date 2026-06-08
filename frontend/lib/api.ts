@@ -181,6 +181,7 @@ export interface JobStatus {
 }
 
 export interface Report {
+  transactions_processed?: number
   total_spent: number
   daily_burn_rate: number
   top_categories: [string, number][]
