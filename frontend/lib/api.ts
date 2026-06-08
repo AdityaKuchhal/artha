@@ -79,12 +79,14 @@ export const api = {
         body: JSON.stringify({ public_token, institution_name }),
       }),
     sync: (days = 30) =>
-      request(`/plaid/sync?days=${days}`, { method: 'POST' }),
+      request<{ job_id: string; status: string; message: string }>(`/plaid/sync?days=${days}`, { method: 'POST' }),
   },
 
   reports: {
     run: (days = 30) =>
-      request<Report>(`/reports/run?days=${days}`, { method: 'POST' }),
+      request<{ job_id: string; status: string; message: string }>(`/reports/run?days=${days}`, { method: 'POST' }),
+    status: (jobId: string) =>
+      request<JobStatus>(`/reports/status?job_id=${jobId}`),
     latest: () => request<Report>('/reports/latest'),
   },
 }
@@ -159,6 +161,23 @@ export interface Budget {
   id: string
   category: string
   monthly_limit: number
+}
+
+export interface JobStatus {
+  job_id: string
+  status: 'pending' | 'running' | 'complete' | 'error'
+  created_at: string
+  updated_at: string
+  error?: string
+  // present when status === 'complete'
+  transactions_processed?: number
+  total_spent?: number
+  daily_burn_rate?: number
+  top_categories?: [string, number][]
+  anomalies?: Anomaly[]
+  budget_alerts?: BudgetAlert[]
+  report?: string
+  errors?: string[]
 }
 
 export interface Report {
