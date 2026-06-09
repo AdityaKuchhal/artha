@@ -388,6 +388,17 @@ select.input option {
 
 .fade-up { animation: fadeUp 0.3s ease forwards; }
 
+/* ── Date and time input icon visibility ── */
+input[type="date"],
+input[type="time"] {
+  color-scheme: dark;
+}
+
+[data-theme="light"] input[type="date"],
+[data-theme="light"] input[type="time"] {
+  color-scheme: light;
+}
+
 /* ── Glow bg ───────────────────────────────────────────────── */
 .glow-bg::before {
   content: '';

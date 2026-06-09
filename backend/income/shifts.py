@@ -64,7 +64,7 @@ def log_shift(user_id: str, data: ShiftCreate) -> dict:
     payload = {
         "user_id": user_id,
         "job_id": str(data.job_id),
-        "date": str(data.date),
+        "date": data.date.isoformat(),  # explicit ISO format, no timezone coercion
         "start_time": str(data.start_time),
         "end_time": str(data.end_time),
         "hours_worked": hours_worked,
@@ -111,7 +111,7 @@ def update_shift(user_id: str, shift_id: str, data: ShiftUpdate) -> dict:
         hourly_rate = float(row["jobs"]["hourly_rate"])
 
     if data.date is not None:
-        updates["date"] = str(data.date)
+        updates["date"] = data.date.isoformat()
     if data.notes is not None:
         updates["notes"] = data.notes
 

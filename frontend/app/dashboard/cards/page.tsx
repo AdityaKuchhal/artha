@@ -278,16 +278,17 @@ function RecentShifts({ jobs, onShiftChange }: { jobs: Job[], onShiftChange: () 
     setDate(shift.date)
     setStart(shift.start_time?.slice(0, 5) || '')
     setEnd(shift.end_time?.slice(0, 5) || '')
-    setBreakMins('0')
-    setBreakPaid(false)
+    setBreakMins(String(shift.break_minutes || 0))
+    setBreakPaid(shift.break_paid || false)
     setShowForm(true)
   }
 
   async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault()
+    // Date input gives YYYY-MM-DD in local time — send as-is, never parse through Date()
     const payload = {
       job_id: jobId,
-      date,
+      date: date,
       start_time: start + ':00',
       end_time: end + ':00',
       break_minutes: parseInt(breakMins) || 0,

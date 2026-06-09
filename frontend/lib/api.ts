@@ -122,6 +122,8 @@ export interface Shift {
   hours_worked: number
   earnings: number
   source: string
+  break_minutes?: number
+  break_paid?: boolean
   notes?: string
 }
 
