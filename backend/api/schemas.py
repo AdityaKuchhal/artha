@@ -53,6 +53,18 @@ class ShiftCreate(BaseModel):
     date: DateType = Field(..., description="Date of the shift")
     start_time: TimeType = Field(..., description="Shift start time")
     end_time: TimeType = Field(..., description="Shift end time")
+    break_minutes: Optional[int] = Field(None, ge=0, le=480, description="Break duration in minutes")
+    break_paid: Optional[bool] = Field(None, description="Whether the break is paid")
+    notes: Optional[str] = Field(None, max_length=500)
+
+
+class ShiftUpdate(BaseModel):
+    job_id: Optional[UUID] = None
+    date: Optional[DateType] = None
+    start_time: Optional[TimeType] = None
+    end_time: Optional[TimeType] = None
+    break_minutes: Optional[int] = Field(None, ge=0, le=480)
+    break_paid: Optional[bool] = None
     notes: Optional[str] = Field(None, max_length=500)
 
     model_config = {

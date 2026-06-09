@@ -5,8 +5,8 @@ routes/shifts.py — Shift logging and earnings API endpoints.
 from fastapi import APIRouter, Header, HTTPException, Query
 from datetime import date
 from typing import Optional
-from backend.api.schemas import ShiftCreate
-from backend.income.shifts import log_shift, get_shifts, get_earnings_summary
+from backend.api.schemas import ShiftCreate, ShiftUpdate
+from backend.income.shifts import log_shift, update_shift, get_shifts, get_earnings_summary
 from backend.db.supabase import supabase
 
 router = APIRouter(prefix="/shifts", tags=["Shifts"])
@@ -34,6 +34,20 @@ async def log_shift_route(
     user_id = get_user_id(authorization)
     try:
         return log_shift(user_id, data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.patch("/{shift_id}")
+async def update_shift_route(
+    shift_id: str,
+    data: ShiftUpdate,
+    authorization: str = Header(...),
+):
+    """Update an existing shift. Recalculates hours and earnings automatically."""
+    user_id = get_user_id(authorization)
+    try:
+        return update_shift(user_id, shift_id, data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

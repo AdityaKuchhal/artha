@@ -1,9 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { api, Job, Shift, EarningsSummary } from '@/lib/api'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Plus, Briefcase, Trash2, Clock, Building2, Link2, RefreshCw, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import {
+  Plus, Briefcase, Trash2, Clock, Building2,
+  Link2, RefreshCw, CheckCircle2, AlertCircle,
+  Loader2, Pencil, Coffee
+} from 'lucide-react'
 import { usePlaidLink, LinkedAccount } from '@/lib/usePlaidLink'
 
 export default function AccountsPage() {
@@ -18,13 +22,20 @@ export default function AccountsPage() {
   const { open, ready, loading: plaidLoading, syncing, error: plaidError, linkedAccounts } =
     usePlaidLink()
 
+  const refreshEarnings = useCallback(async () => {
+    try {
+      const e = await api.shifts.earnings('monthly')
+      setEarnings(e)
+    } catch (err) { console.error(err) }
+  }, [])
+
   useEffect(() => {
     Promise.all([api.jobs.list(), api.shifts.earnings('monthly')])
       .then(([j, e]) => { setJobs(j); setEarnings(e) })
       .catch(console.error)
   }, [])
 
-  async function addJob(e: React.FormEvent) {
+  async function addJob(e: { preventDefault(): void }) {
     e.preventDefault()
     const job = await api.jobs.create({ name, hourly_rate: parseFloat(rate), color })
     setJobs([...jobs, job])
@@ -39,26 +50,23 @@ export default function AccountsPage() {
   return (
     <div className="page fade-up">
 
-      {/* Header with tab switcher */}
+      {/* Header tabs */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '4px', background: 'var(--bg2)', borderRadius: '10px', padding: '4px' }}>
+        <div style={{ display: 'flex', gap: '4px', background: 'var(--bg2)', borderRadius: '10px', padding: '4px', border: '1px solid var(--card-border)' }}>
           {(['jobs', 'banks'] as const).map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} style={{
               padding: '6px 16px', borderRadius: '8px', border: 'none',
               cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit',
-              background: activeTab === tab ? 'var(--card-bg)' : 'transparent',
-              color: activeTab === tab ? 'var(--text)' : 'var(--text3)',
-              boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.2)' : 'none',
+              background: activeTab === tab ? 'var(--accent)' : 'transparent',
+              color: activeTab === tab ? '#fff' : 'var(--text3)',
+              boxShadow: activeTab === tab ? '0 2px 8px rgba(59,130,246,0.3)' : 'none',
               transition: 'all 0.15s ease',
               display: 'flex', alignItems: 'center', gap: '6px',
             }}>
               {tab === 'jobs' ? <Briefcase size={13} /> : <Building2 size={13} />}
               {tab === 'jobs' ? 'Jobs' : 'Banks'}
               {tab === 'banks' && linkedAccounts.length > 0 && (
-                <span style={{
-                  background: 'var(--accent)', color: '#fff', borderRadius: '20px',
-                  padding: '0 6px', fontSize: '10px', fontWeight: 700, lineHeight: '18px',
-                }}>
+                <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '20px', padding: '0 6px', fontSize: '10px', fontWeight: 700, lineHeight: '18px' }}>
                   {linkedAccounts.length}
                 </span>
               )}
@@ -81,14 +89,8 @@ export default function AccountsPage() {
         )}
       </div>
 
-      {/* Error banner */}
       {plaidError && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          padding: '12px 16px', borderRadius: '10px',
-          background: 'var(--red)20', border: '1px solid var(--red)40',
-          color: 'var(--red)', fontSize: '13px',
-        }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', borderRadius: '10px', background: 'var(--red-dim)', border: '1px solid var(--red)', color: 'var(--red)', fontSize: '13px' }}>
           <AlertCircle size={15} /> {plaidError}
         </div>
       )}
@@ -129,7 +131,7 @@ export default function AccountsPage() {
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: job.color }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: job.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: job.color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Briefcase size={20} color={job.color} />
                       </div>
                       <div>
@@ -149,7 +151,7 @@ export default function AccountsPage() {
                     {[
                       { label: 'Earned', value: formatCurrency(jobEarnings?.earnings || 0), color: 'var(--green)' },
                       { label: 'Hours', value: `${jobEarnings?.hours || 0}h`, color: 'var(--text)' },
-                      { label: 'Shifts', value: jobEarnings?.shifts || 0, color: 'var(--text)' },
+                      { label: 'Shifts', value: String(jobEarnings?.shifts || 0), color: 'var(--text)' },
                     ].map(({ label, value, color: c }) => (
                       <div key={label}>
                         <div style={{ fontSize: '11px', color: 'var(--text3)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
@@ -180,7 +182,7 @@ export default function AccountsPage() {
 
           <div>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '12px' }}>Recent Shifts</div>
-            <RecentShifts jobs={jobs} />
+            <RecentShifts jobs={jobs} onShiftChange={refreshEarnings} />
           </div>
         </>
       )}
@@ -189,29 +191,15 @@ export default function AccountsPage() {
       {activeTab === 'banks' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {syncing && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              padding: '12px 16px', borderRadius: '10px',
-              background: 'var(--accent)10', border: '1px solid var(--accent)30',
-              fontSize: '13px', color: 'var(--accent)',
-            }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderRadius: '10px', background: 'var(--accent-dim)', border: '1px solid var(--card-border)', fontSize: '13px', color: 'var(--accent)' }}>
               <Loader2 size={15} style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
               Syncing your transactions — this takes a few seconds...
             </div>
           )}
-
-          {linkedAccounts.map(account => (
-            <BankAccountCard key={account.item_id} account={account} />
-          ))}
-
+          {linkedAccounts.map(account => <BankAccountCard key={account.item_id} account={account} />)}
           {linkedAccounts.length === 0 && (
             <div className="card" style={{ textAlign: 'center', padding: '64px 32px' }}>
-              <div style={{
-                width: '64px', height: '64px', borderRadius: '16px',
-                background: 'var(--accent)15',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 20px',
-              }}>
+              <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                 <Building2 size={28} color="var(--accent)" />
               </div>
               <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>No banks connected</div>
@@ -219,19 +207,14 @@ export default function AccountsPage() {
                 Connect your bank to automatically sync transactions and power your AI reports.
               </div>
               <button className="btn btn-primary" onClick={() => open()} disabled={!ready || plaidLoading}>
-                {plaidLoading
-                  ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Initializing...</>
-                  : <><Link2 size={14} /> Connect Your Bank</>}
+                {plaidLoading ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Initializing...</> : <><Link2 size={14} /> Connect Your Bank</>}
               </button>
-              <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '16px' }}>
-                Secured by Plaid · 256-bit encryption
-              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '16px' }}>Secured by Plaid · 256-bit encryption</div>
             </div>
           )}
-
           {linkedAccounts.length > 0 && (
             <button onClick={() => open()} disabled={!ready} className="btn btn-ghost"
-              style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px dashed var(--card-border)', fontSize: '13px', gap: '8px' }}>
+              style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px dashed var(--card-border)', fontSize: '13px', gap: '8px', justifyContent: 'center' }}>
               <Plus size={14} /> Connect Another Bank
             </button>
           )}
@@ -241,8 +224,9 @@ export default function AccountsPage() {
   )
 }
 
+/* ── Bank Card ── */
 function BankAccountCard({ account }: { account: LinkedAccount }) {
-  const statusConfig = {
+  const cfg = {
     linked:  { icon: <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />, label: 'Linking',  color: 'var(--text3)' },
     syncing: { icon: <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />, label: 'Syncing', color: 'var(--accent)' },
     synced:  { icon: <CheckCircle2 size={13} />, label: 'Synced', color: 'var(--green)' },
@@ -251,7 +235,7 @@ function BankAccountCard({ account }: { account: LinkedAccount }) {
 
   return (
     <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-      <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent)15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <Building2 size={22} color="var(--accent)" />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -260,82 +244,193 @@ function BankAccountCard({ account }: { account: LinkedAccount }) {
           <div style={{ fontSize: '12px', color: 'var(--text3)', marginTop: '2px' }}>{account.synced_count} transactions synced</div>
         )}
       </div>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '5px',
-        padding: '4px 10px', borderRadius: '20px',
-        background: statusConfig.color + '15', color: statusConfig.color,
-        fontSize: '12px', fontWeight: 600, flexShrink: 0,
-      }}>
-        {statusConfig.icon} {statusConfig.label}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '20px', background: cfg.color + '18', color: cfg.color, fontSize: '12px', fontWeight: 600, flexShrink: 0 }}>
+        {cfg.icon} {cfg.label}
       </div>
     </div>
   )
 }
 
-function RecentShifts({ jobs }: { jobs: Job[] }) {
+/* ── Recent Shifts ── */
+function RecentShifts({ jobs, onShiftChange }: { jobs: Job[], onShiftChange: () => Promise<void> }) {
   const [shifts, setShifts] = useState<Shift[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [editingShift, setEditingShift] = useState<Shift | null>(null)
+
   const [jobId, setJobId] = useState('')
   const [date, setDate] = useState('')
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
+  const [breakMins, setBreakMins] = useState('0')
+  const [breakPaid, setBreakPaid] = useState(false)
 
   useEffect(() => { api.shifts.list().then(setShifts).catch(console.error) }, [])
 
-  async function logShift(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    const shift = await api.shifts.create({ job_id: jobId, date, start_time: start + ':00', end_time: end + ':00' })
-    setShifts([shift, ...shifts])
-    setShowForm(false)
+  function resetForm() {
+    setJobId(''); setDate(''); setStart(''); setEnd('')
+    setBreakMins('0'); setBreakPaid(false)
+    setShowForm(false); setEditingShift(null)
   }
+
+  function openEdit(shift: Shift) {
+    setEditingShift(shift)
+    setJobId(shift.job_id)
+    setDate(shift.date)
+    setStart(shift.start_time?.slice(0, 5) || '')
+    setEnd(shift.end_time?.slice(0, 5) || '')
+    setBreakMins('0')
+    setBreakPaid(false)
+    setShowForm(true)
+  }
+
+  async function handleSubmit(e: { preventDefault(): void }) {
+    e.preventDefault()
+    const payload = {
+      job_id: jobId,
+      date,
+      start_time: start + ':00',
+      end_time: end + ':00',
+      break_minutes: parseInt(breakMins) || 0,
+      break_paid: breakPaid,
+    }
+
+    if (editingShift) {
+      const updated = await api.shifts.update(editingShift.id, payload)
+      setShifts(shifts.map(s => s.id === editingShift.id ? updated : s))
+    } else {
+      const shift = await api.shifts.create(payload)
+      setShifts([shift, ...shifts])
+    }
+
+    await onShiftChange()
+    resetForm()
+  }
+
+  const ShiftForm = (
+    <form onSubmit={handleSubmit} className="card" style={{ marginBottom: '16px' }}>
+      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '16px' }}>
+        {editingShift ? 'Edit Shift' : 'Log New Shift'}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+        <div>
+          <label className="label">Job</label>
+          <select className="input" value={jobId} onChange={e => setJobId(e.target.value)} required>
+            <option value="">Select</option>
+            {jobs.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">Date</label>
+          <input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
+        </div>
+        <div>
+          <label className="label">Start</label>
+          <input className="input" type="time" value={start} onChange={e => setStart(e.target.value)} required />
+        </div>
+        <div>
+          <label className="label">End</label>
+          <input className="input" type="time" value={end} onChange={e => setEnd(e.target.value)} required />
+        </div>
+      </div>
+
+      {/* Break time row */}
+      <div style={{ marginTop: '16px', padding: '14px', background: 'var(--bg2)', borderRadius: '10px', border: '1px solid var(--card-border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <Coffee size={13} color="var(--text3)" />
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Break Time</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'end' }}>
+          <div>
+            <label className="label">Break Duration (minutes)</label>
+            <input
+              className="input" type="number" min="0" max="480"
+              value={breakMins} onChange={e => setBreakMins(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label className="label">Break Type</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {([{ val: false, label: 'Unpaid' }, { val: true, label: 'Paid' }] as const).map(({ val, label }) => (
+                <button key={label} type="button"
+                  onClick={() => setBreakPaid(val)}
+                  style={{
+                    flex: 1, padding: '9px', borderRadius: '8px', border: '1px solid var(--card-border)',
+                    cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'inherit',
+                    background: breakPaid === val ? 'var(--accent)' : 'var(--bg2)',
+                    color: breakPaid === val ? '#fff' : 'var(--text3)',
+                    transition: 'all 0.15s',
+                  }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '6px' }}>
+              {breakPaid ? 'Paid break — not deducted from earnings' : 'Unpaid break — deducted from hours'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+        <button type="submit" className="btn btn-primary">
+          {editingShift ? 'Save Changes' : 'Log Shift'}
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={resetForm}>Cancel</button>
+      </div>
+    </form>
+  )
 
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
-        <button className="btn btn-ghost" onClick={() => setShowForm(!showForm)}><Clock size={13} /> Log Shift</button>
+        <button className="btn btn-primary" onClick={() => { setEditingShift(null); setShowForm(!showForm) }}>
+          <Clock size={13} /> Log Shift
+        </button>
       </div>
-      {showForm && (
-        <form onSubmit={logShift} className="card" style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-            <div><label className="label">Job</label>
-              <select className="input" value={jobId} onChange={e => setJobId(e.target.value)} required>
-                <option value="">Select</option>
-                {jobs.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
-              </select>
-            </div>
-            <div><label className="label">Date</label><input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} required /></div>
-            <div><label className="label">Start</label><input className="input" type="time" value={start} onChange={e => setStart(e.target.value)} required /></div>
-            <div><label className="label">End</label><input className="input" type="time" value={end} onChange={e => setEnd(e.target.value)} required /></div>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-            <button type="submit" className="btn btn-primary">Log Shift</button>
-            <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
-          </div>
-        </form>
-      )}
+
+      {showForm && ShiftForm}
+
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Date</th><th>Job</th><th>Hours</th><th>Earnings</th><th>Source</th></tr></thead>
+          <thead>
+            <tr><th>Date</th><th>Job</th><th>Hours</th><th>Earnings</th><th>Source</th><th></th></tr>
+          </thead>
           <tbody>
-            {shifts.length === 0
-              ? <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text3)', padding: '32px' }}>No shifts logged yet.</td></tr>
-              : shifts.map(s => {
-                const job = jobs.find(j => j.id === s.job_id)
-                return (
-                  <tr key={s.id}>
-                    <td style={{ color: 'var(--text3)', fontSize: '12px' }}>{formatDate(s.date)}</td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: job?.color || 'var(--accent)', flexShrink: 0 }} />
-                        <span style={{ color: 'var(--text)', fontSize: '13px' }}>{job?.name || 'Unknown'}</span>
-                      </div>
-                    </td>
-                    <td style={{ color: 'var(--text)', fontWeight: 500 }}>{s.hours_worked}h</td>
-                    <td style={{ color: 'var(--green)', fontWeight: 600 }}>{formatCurrency(s.earnings)}</td>
-                    <td><span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', background: 'var(--bg3)', color: 'var(--text3)' }}>{s.source}</span></td>
-                  </tr>
-                )
-              })}
+            {shifts.length === 0 ? (
+              <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text3)', padding: '32px' }}>No shifts logged yet.</td></tr>
+            ) : shifts.map(s => {
+              const job = jobs.find(j => j.id === s.job_id)
+              return (
+                <tr key={s.id}>
+                  <td style={{ color: 'var(--text3)', fontSize: '12px' }}>{formatDate(s.date)}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: job?.color || 'var(--accent)', flexShrink: 0 }} />
+                      <span style={{ color: 'var(--text)', fontSize: '13px' }}>{job?.name || 'Unknown'}</span>
+                    </div>
+                  </td>
+                  <td style={{ color: 'var(--text)', fontWeight: 500 }}>{s.hours_worked}h</td>
+                  <td style={{ color: 'var(--green)', fontWeight: 600 }}>{formatCurrency(s.earnings)}</td>
+                  <td>
+                    <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', background: 'var(--bg3)', color: 'var(--text3)' }}>
+                      {s.source}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => openEdit(s)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: '4px', display: 'flex', alignItems: 'center' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text3)')}
+                      title="Edit shift"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

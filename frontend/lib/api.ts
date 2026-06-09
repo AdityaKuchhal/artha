@@ -52,6 +52,8 @@ export const api = {
     },
     create: (data: ShiftCreate) =>
       request<Shift>('/shifts', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<ShiftCreate> & { break_minutes?: number; break_paid?: boolean }) =>
+      request<Shift>(`/shifts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     earnings: (period: 'daily' | 'weekly' | 'biweekly' | 'monthly') =>
       request<EarningsSummary>(`/shifts/earnings/summary?period=${period}`),
   },
@@ -106,6 +108,8 @@ export interface ShiftCreate {
   date: string
   start_time: string
   end_time: string
+  break_minutes?: number
+  break_paid?: boolean
   notes?: string
 }
 
