@@ -307,6 +307,13 @@ function RecentShifts({ jobs, onShiftChange }: { jobs: Job[], onShiftChange: () 
     resetForm()
   }
 
+  async function deleteShift(id: string) {
+    if (!confirm('Delete this shift?')) return
+    await api.shifts.delete(id)
+    setShifts(shifts.filter(s => s.id !== id))
+    await onShiftChange()
+  }
+
   const ShiftForm = (
     <form onSubmit={handleSubmit} className="card" style={{ marginBottom: '16px' }}>
       <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '16px' }}>
@@ -419,15 +426,26 @@ function RecentShifts({ jobs, onShiftChange }: { jobs: Job[], onShiftChange: () 
                     </span>
                   </td>
                   <td>
-                    <button
-                      onClick={() => openEdit(s)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: '4px', display: 'flex', alignItems: 'center' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text3)')}
-                      title="Edit shift"
-                    >
-                      <Pencil size={13} />
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <button
+                        onClick={() => openEdit(s)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: '4px', display: 'flex', alignItems: 'center' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text3)')}
+                        title="Edit shift"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => deleteShift(s.id)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: '4px', display: 'flex', alignItems: 'center' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--red)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text3)')}
+                        title="Delete shift"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )

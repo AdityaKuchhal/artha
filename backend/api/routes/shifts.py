@@ -52,6 +52,22 @@ async def update_shift_route(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.delete("/{shift_id}", status_code=204)
+async def delete_shift_route(
+    shift_id: str,
+    authorization: str = Header(...),
+):
+    """Delete a shift log."""
+    user_id = get_user_id(authorization)
+    result = supabase.table("shifts")\
+        .delete()\
+        .eq("id", shift_id)\
+        .eq("user_id", user_id)\
+        .execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Shift not found")
+
+
 @router.get("")
 async def get_shifts_route(
     start_date: Optional[date] = Query(None),

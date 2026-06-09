@@ -54,6 +54,8 @@ export const api = {
       request<Shift>('/shifts', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<ShiftCreate> & { break_minutes?: number; break_paid?: boolean }) =>
       request<Shift>(`/shifts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) =>
+      request<void>(`/shifts/${id}`, { method: 'DELETE' }),
     earnings: (period: 'daily' | 'weekly' | 'biweekly' | 'monthly') =>
       request<EarningsSummary>(`/shifts/earnings/summary?period=${period}`),
   },
