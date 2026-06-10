@@ -58,6 +58,8 @@ export const api = {
       request<void>(`/shifts/${id}`, { method: 'DELETE' }),
     earnings: (period: 'daily' | 'weekly' | 'biweekly' | 'monthly') =>
       request<EarningsSummary>(`/shifts/earnings/summary?period=${period}`),
+    daily: (days = 7) =>
+      request<{ days: DailyEarning[]; total_earnings: number; total_hours: number }>(`/shifts/earnings/daily?days=${days}`),
   },
 
   transactions: {
@@ -214,4 +216,11 @@ export interface BudgetAlert {
   percent_used: number
   severity: 'warning' | 'critical'
   message: string
+}
+
+export interface DailyEarning {
+  date: string
+  earnings: number
+  hours: number
+  shifts: number
 }

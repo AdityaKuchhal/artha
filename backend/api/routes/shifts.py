@@ -93,3 +93,51 @@ async def earnings_summary_route(
     """
     user_id = get_user_id(authorization)
     return get_earnings_summary(user_id, period)
+
+
+@router.get("/earnings/daily")
+async def daily_earnings_route(
+    days: int = Query(default=7, ge=1, le=30),
+    authorization: str = Header(...),
+):
+    """
+    Get per-day earnings for the last N days.
+    Used for the weekly bar chart on the dashboard.
+    """
+    from datetime import timedelta
+    user_id = get_user_id(authorization)
+
+    today = date.today()
+    start_date = today - timedelta(days=days - 1)
+
+    shifts = supabase.table("shifts")\
+        .select("date, earnings, hours_worked, job_id")\
+        .eq("user_id", user_id)\
+        .gte("date", str(start_date))\
+        .lte("date", str(today))\
+        .execute()
+
+    # Build day-by-day map
+    daily: dict[str, dict] = {}
+    cursor = start_date
+    while cursor <= today:
+        daily[str(cursor)] = {
+            "date": str(cursor),
+            "earnings": 0.0,
+            "hours": 0.0,
+            "shifts": 0,
+        }
+        cursor += timedelta(days=1)
+
+    for s in (shifts.data or []):
+        d = s["date"]
+        if d in daily:
+            daily[d]["earnings"] = round(daily[d]["earnings"] + s["earnings"], 2)
+            daily[d]["hours"] = round(daily[d]["hours"] + s["hours_worked"], 2)
+            daily[d]["shifts"] += 1
+
+    return {
+        "days": list(daily.values()),
+        "total_earnings": round(sum(d["earnings"] for d in daily.values()), 2),
+        "total_hours": round(sum(d["hours"] for d in daily.values()), 2),
+    }
