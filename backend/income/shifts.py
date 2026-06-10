@@ -10,9 +10,10 @@ Example:
 """
 
 import logging
-from datetime import datetime, time, date
-from backend.db.supabase import supabase
+from datetime import date, datetime, time
+
 from backend.api.schemas import ShiftCreate, ShiftUpdate
+from backend.db.supabase import supabase
 from backend.income.jobs import get_job
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ def calculate_hours(start: time, end: time) -> float:
     # Handle overnight shifts
     if end_dt <= start_dt:
         from datetime import timedelta
+
         end_dt += timedelta(days=1)
 
     delta = end_dt - start_dt
@@ -116,6 +118,7 @@ def update_shift(user_id: str, shift_id: str, data: ShiftUpdate) -> dict:
         updates["notes"] = data.notes
 
     from datetime import time as time_type
+
     start = data.start_time or time_type.fromisoformat(row["start_time"])
     end = data.end_time or time_type.fromisoformat(row["end_time"])
     if data.start_time is not None:
@@ -123,8 +126,12 @@ def update_shift(user_id: str, shift_id: str, data: ShiftUpdate) -> dict:
     if data.end_time is not None:
         updates["end_time"] = str(data.end_time)
 
-    break_minutes = data.break_minutes if data.break_minutes is not None else row.get("break_minutes", 0) or 0
-    break_paid = data.break_paid if data.break_paid is not None else row.get("break_paid", False) or False
+    break_minutes = (
+        data.break_minutes if data.break_minutes is not None else row.get("break_minutes", 0) or 0
+    )
+    break_paid = (
+        data.break_paid if data.break_paid is not None else row.get("break_paid", False) or False
+    )
 
     hours_worked = calculate_hours(start, end)
     if break_minutes and not break_paid:
@@ -135,11 +142,7 @@ def update_shift(user_id: str, shift_id: str, data: ShiftUpdate) -> dict:
     updates["earnings"] = earnings
 
     response = (
-        supabase.table("shifts")
-        .update(updates)
-        .eq("id", shift_id)
-        .eq("user_id", user_id)
-        .execute()
+        supabase.table("shifts").update(updates).eq("id", shift_id).eq("user_id", user_id).execute()
     )
     if not response.data:
         raise ValueError("Failed to update shift")
@@ -165,9 +168,7 @@ def get_shifts(
         List of shift records
     """
     query = (
-        supabase.table("shifts")
-        .select("*, jobs(name, hourly_rate, color)")
-        .eq("user_id", user_id)
+        supabase.table("shifts").select("*, jobs(name, hourly_rate, color)").eq("user_id", user_id)
     )
 
     if start_date:

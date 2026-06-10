@@ -6,9 +6,9 @@ Each job has a name, hourly rate, and color tag for UI display.
 """
 
 import logging
-from uuid import UUID
-from backend.db.supabase import supabase
+
 from backend.api.schemas import JobCreate, JobUpdate
+from backend.db.supabase import supabase
 
 logger = logging.getLogger(__name__)
 
@@ -82,11 +82,7 @@ def update_job(user_id: str, job_id: str, data: JobUpdate) -> dict:
         raise ValueError("No fields to update")
 
     response = (
-        supabase.table("jobs")
-        .update(payload)
-        .eq("id", job_id)
-        .eq("user_id", user_id)
-        .execute()
+        supabase.table("jobs").update(payload).eq("id", job_id).eq("user_id", user_id).execute()
     )
 
     if not response.data:

@@ -12,10 +12,7 @@ async function getToken(): Promise<string | null> {
   return data.session?.access_token || null
 }
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await getToken()
 
   const res = await fetch(`${API_URL}${path}`, {
@@ -41,25 +38,29 @@ export const api = {
     list: () => request<Job[]>('/jobs'),
     create: (data: { name: string; hourly_rate: number; color?: string }) =>
       request<Job>('/jobs', { method: 'POST', body: JSON.stringify(data) }),
-    delete: (id: string) =>
-      request<void>(`/jobs/${id}`, { method: 'DELETE' }),
+    delete: (id: string) => request<void>(`/jobs/${id}`, { method: 'DELETE' }),
   },
 
   shifts: {
     list: (params?: { start_date?: string; end_date?: string }) => {
-      const qs = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : ''
+      const qs = params
+        ? '?' + new URLSearchParams(params as Record<string, string>).toString()
+        : ''
       return request<Shift[]>(`/shifts${qs}`)
     },
     create: (data: ShiftCreate) =>
       request<Shift>('/shifts', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<ShiftCreate> & { break_minutes?: number; break_paid?: boolean }) =>
-      request<Shift>(`/shifts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    delete: (id: string) =>
-      request<void>(`/shifts/${id}`, { method: 'DELETE' }),
+    update: (
+      id: string,
+      data: Partial<ShiftCreate> & { break_minutes?: number; break_paid?: boolean }
+    ) => request<Shift>(`/shifts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/shifts/${id}`, { method: 'DELETE' }),
     earnings: (period: 'daily' | 'weekly' | 'biweekly' | 'monthly') =>
       request<EarningsSummary>(`/shifts/earnings/summary?period=${period}`),
     daily: (days = 7) =>
-      request<{ days: DailyEarning[]; total_earnings: number; total_hours: number }>(`/shifts/earnings/daily?days=${days}`),
+      request<{ days: DailyEarning[]; total_earnings: number; total_hours: number }>(
+        `/shifts/earnings/daily?days=${days}`
+      ),
   },
 
   transactions: {
@@ -73,8 +74,7 @@ export const api = {
     list: () => request<Budget[]>('/budgets'),
     create: (data: { category: string; monthly_limit: number }) =>
       request<Budget>('/budgets', { method: 'POST', body: JSON.stringify(data) }),
-    delete: (id: string) =>
-      request<void>(`/budgets/${id}`, { method: 'DELETE' }),
+    delete: (id: string) => request<void>(`/budgets/${id}`, { method: 'DELETE' }),
   },
 
   plaid: {
@@ -85,14 +85,17 @@ export const api = {
         body: JSON.stringify({ public_token, institution_name }),
       }),
     sync: (days = 30) =>
-      request<{ job_id: string; status: string; message: string }>(`/plaid/sync?days=${days}`, { method: 'POST' }),
+      request<{ job_id: string; status: string; message: string }>(`/plaid/sync?days=${days}`, {
+        method: 'POST',
+      }),
   },
 
   reports: {
     run: (days = 30) =>
-      request<{ job_id: string; status: string; message: string }>(`/reports/run?days=${days}`, { method: 'POST' }),
-    status: (jobId: string) =>
-      request<JobStatus>(`/reports/status?job_id=${jobId}`),
+      request<{ job_id: string; status: string; message: string }>(`/reports/run?days=${days}`, {
+        method: 'POST',
+      }),
+    status: (jobId: string) => request<JobStatus>(`/reports/status?job_id=${jobId}`),
     latest: () => request<Report>('/reports/latest'),
   },
 }

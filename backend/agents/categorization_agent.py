@@ -11,9 +11,10 @@ Why Claude over a rules engine:
 - Improves over time as we tune the prompt
 """
 
-import os
 import json
 import logging
+import os
+
 from anthropic import Anthropic
 
 logger = logging.getLogger(__name__)
@@ -73,10 +74,7 @@ def categorize_transactions(transactions: list[dict]) -> list[dict]:
     results = []
     batch_size = 50
 
-    batches = [
-        transactions[i:i + batch_size]
-        for i in range(0, len(transactions), batch_size)
-    ]
+    batches = [transactions[i : i + batch_size] for i in range(0, len(transactions), batch_size)]
 
     for batch_num, batch in enumerate(batches):
         # Build minimal payload for Claude — only what it needs
@@ -94,19 +92,18 @@ def categorize_transactions(transactions: list[dict]) -> list[dict]:
                 model="claude-sonnet-4-6",
                 max_tokens=2000,
                 system=SYSTEM_PROMPT,
-                messages=[{
-                    "role": "user",
-                    "content": f"Categorize these transactions:\n{json.dumps(payload)}"
-                }]
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"Categorize these transactions:\n{json.dumps(payload)}",
+                    }
+                ],
             )
 
             categorized = json.loads(response.content[0].text)
 
             # Merge AI categories back into original batch
-            cat_map = {
-                t["plaid_transaction_id"]: t
-                for t in categorized
-            }
+            cat_map = {t["plaid_transaction_id"]: t for t in categorized}
 
             for txn in batch:
                 ai_data = cat_map.get(txn["plaid_transaction_id"], {})

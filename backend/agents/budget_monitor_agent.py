@@ -8,6 +8,7 @@ Generates alerts when:
 """
 
 import logging
+
 from backend.db.supabase import supabase
 
 logger = logging.getLogger(__name__)
@@ -28,10 +29,7 @@ def monitor_budgets(user_id: str, analysis: dict) -> list[dict]:
         return []
 
     # Fetch user's budget limits
-    budgets_response = supabase.table("budgets")\
-        .select("*")\
-        .eq("user_id", user_id)\
-        .execute()
+    budgets_response = supabase.table("budgets").select("*").eq("user_id", user_id).execute()
 
     budgets = budgets_response.data or []
 
@@ -49,32 +47,34 @@ def monitor_budgets(user_id: str, analysis: dict) -> list[dict]:
         percent_used = round((spent / limit * 100), 1) if limit > 0 else 0
 
         if percent_used >= 100:
-            alerts.append({
-                "category": category,
-                "spent": spent,
-                "limit": limit,
-                "percent_used": percent_used,
-                "severity": "critical",
-                "message": f"Over budget on {category}: "
-                           f"${spent:.2f} spent of ${limit:.2f} limit "
-                           f"({percent_used}%)",
-            })
+            alerts.append(
+                {
+                    "category": category,
+                    "spent": spent,
+                    "limit": limit,
+                    "percent_used": percent_used,
+                    "severity": "critical",
+                    "message": f"Over budget on {category}: "
+                    f"${spent:.2f} spent of ${limit:.2f} limit "
+                    f"({percent_used}%)",
+                }
+            )
         elif percent_used >= 80:
-            alerts.append({
-                "category": category,
-                "spent": spent,
-                "limit": limit,
-                "percent_used": percent_used,
-                "severity": "warning",
-                "message": f"Approaching budget limit on {category}: "
-                           f"${spent:.2f} spent of ${limit:.2f} limit "
-                           f"({percent_used}%)",
-            })
+            alerts.append(
+                {
+                    "category": category,
+                    "spent": spent,
+                    "limit": limit,
+                    "percent_used": percent_used,
+                    "severity": "warning",
+                    "message": f"Approaching budget limit on {category}: "
+                    f"${spent:.2f} spent of ${limit:.2f} limit "
+                    f"({percent_used}%)",
+                }
+            )
 
     logger.info(
-        f"[budget_monitor] user={user_id} "
-        f"checked={len(budgets)} budgets, "
-        f"alerts={len(alerts)}"
+        f"[budget_monitor] user={user_id} checked={len(budgets)} budgets, alerts={len(alerts)}"
     )
 
     return alerts

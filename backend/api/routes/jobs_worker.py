@@ -5,15 +5,16 @@ Never exposed to frontend directly.
 """
 
 import logging
-import json
-from fastapi import APIRouter, Header, HTTPException, Request
+
+from fastapi import APIRouter, HTTPException, Request
+
 from backend.db.supabase import supabase
 from backend.orchestrator.workflow import artha_workflow
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/internal", tags=["Internal"])
 
-INTERNAL_SECRET = __import__('os').getenv("INTERNAL_SECRET", "artha-internal")
+INTERNAL_SECRET = __import__("os").getenv("INTERNAL_SECRET", "artha-internal")
 
 
 @router.post("/process-job")
@@ -36,10 +37,12 @@ async def process_job(request: Request):
     if not all([job_id, user_id, job_type]):
         raise HTTPException(status_code=400, detail="Missing job_id, user_id, or job_type")
 
-    supabase.table("agent_jobs").update({
-        "status": "running",
-        "updated_at": "now()",
-    }).eq("id", job_id).execute()
+    supabase.table("agent_jobs").update(
+        {
+            "status": "running",
+            "updated_at": "now()",
+        }
+    ).eq("id", job_id).execute()
 
     try:
         if job_type == "report":
@@ -49,21 +52,25 @@ async def process_job(request: Request):
         else:
             raise ValueError(f"Unknown job type: {job_type}")
 
-        supabase.table("agent_jobs").update({
-            "status": "complete",
-            "result": result,
-            "updated_at": "now()",
-        }).eq("id", job_id).execute()
+        supabase.table("agent_jobs").update(
+            {
+                "status": "complete",
+                "result": result,
+                "updated_at": "now()",
+            }
+        ).eq("id", job_id).execute()
 
         return {"status": "complete", "job_id": job_id}
 
     except Exception as e:
         logger.error(f"Job {job_id} failed: {e}")
-        supabase.table("agent_jobs").update({
-            "status": "error",
-            "error": str(e),
-            "updated_at": "now()",
-        }).eq("id", job_id).execute()
+        supabase.table("agent_jobs").update(
+            {
+                "status": "error",
+                "error": str(e),
+                "updated_at": "now()",
+            }
+        ).eq("id", job_id).execute()
         raise
 
 
@@ -87,8 +94,7 @@ async def _run_report(user_id: str, payload: dict) -> dict:
         "total_spent": result["analysis"].get("total_spent", 0),
         "daily_burn_rate": result["analysis"].get("daily_burn_rate", 0),
         "top_categories": sorted(
-            result["analysis"].get("by_category", {}).items(),
-            key=lambda x: x[1], reverse=True
+            result["analysis"].get("by_category", {}).items(), key=lambda x: x[1], reverse=True
         )[:5],
         "anomalies": result["analysis"].get("anomalies", []),
         "budget_alerts": result["budget_alerts"],
@@ -98,13 +104,16 @@ async def _run_report(user_id: str, payload: dict) -> dict:
 
 
 async def _run_sync(user_id: str, payload: dict) -> dict:
+    import os
+    from datetime import date, timedelta
+
+    import certifi
+    from plaid import ApiClient, Configuration, Environment
     from plaid.api import plaid_api
     from plaid.model.transactions_get_request import TransactionsGetRequest
     from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
-    from plaid import ApiClient, Configuration, Environment
+
     from backend.agents.extraction_agent import process_transactions
-    from datetime import date, timedelta
-    import os, certifi
 
     days = payload.get("days", 30)
     items = supabase.table("plaid_items").select("*").eq("user_id", user_id).execute()

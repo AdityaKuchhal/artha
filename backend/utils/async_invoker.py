@@ -4,9 +4,10 @@ Triggers the /internal/process-job endpoint on this same Lambda
 with InvocationType=Event so it returns immediately.
 """
 
-import os
 import json
 import logging
+import os
+
 import boto3
 
 logger = logging.getLogger(__name__)
@@ -43,12 +44,14 @@ def invoke_job_async(job_id: str, user_id: str, job_type: str, payload: dict):
             "requestId": f"internal-{job_id}",
             "stage": "$default",
         },
-        "body": json.dumps({
-            "job_id": job_id,
-            "user_id": user_id,
-            "job_type": job_type,
-            "payload": payload,
-        }),
+        "body": json.dumps(
+            {
+                "job_id": job_id,
+                "user_id": user_id,
+                "job_type": job_type,
+                "payload": payload,
+            }
+        ),
         "isBase64Encoded": False,
     }
 

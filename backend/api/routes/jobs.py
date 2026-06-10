@@ -3,9 +3,10 @@ routes/jobs.py — Job profile API endpoints.
 """
 
 from fastapi import APIRouter, Header, HTTPException
-from backend.api.schemas import JobCreate, JobUpdate, JobResponse
-from backend.income.jobs import create_job, get_jobs, get_job, update_job, delete_job
+
+from backend.api.schemas import JobCreate, JobUpdate
 from backend.db.supabase import supabase
+from backend.income.jobs import create_job, delete_job, get_job, get_jobs, update_job
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 

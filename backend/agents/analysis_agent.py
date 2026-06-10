@@ -11,7 +11,6 @@ Analyzes categorized transactions to find:
 import logging
 from collections import defaultdict
 from statistics import mean, stdev
-from datetime import date
 
 logger = logging.getLogger(__name__)
 
@@ -71,15 +70,18 @@ def analyze_spending(user_id: str, transactions: list[dict]) -> dict:
             for txn in expenses:
                 z_score = (txn["amount"] - avg) / std
                 if abs(z_score) >= ANOMALY_Z_THRESHOLD:
-                    anomalies.append({
-                        "merchant": txn.get("merchant_name", "Unknown"),
-                        "amount": txn["amount"],
-                        "date": txn.get("date", ""),
-                        "category": txn.get("ai_category", "Other"),
-                        "z_score": round(z_score, 2),
-                        "reason": "Unusually large transaction" if z_score > 0
-                                  else "Unusually small transaction",
-                    })
+                    anomalies.append(
+                        {
+                            "merchant": txn.get("merchant_name", "Unknown"),
+                            "amount": txn["amount"],
+                            "date": txn.get("date", ""),
+                            "category": txn.get("ai_category", "Other"),
+                            "z_score": round(z_score, 2),
+                            "reason": "Unusually large transaction"
+                            if z_score > 0
+                            else "Unusually small transaction",
+                        }
+                    )
 
     # Daily burn rate
     dates = [t["date"] for t in expenses if t.get("date")]
@@ -87,9 +89,9 @@ def analyze_spending(user_id: str, transactions: list[dict]) -> dict:
         min_date = min(dates)
         max_date = max(dates)
         from datetime import datetime
+
         days_span = max(
-            (datetime.fromisoformat(max_date) - datetime.fromisoformat(min_date)).days,
-            1
+            (datetime.fromisoformat(max_date) - datetime.fromisoformat(min_date)).days, 1
         )
         daily_burn_rate = round(total_spent / days_span, 2)
     else:
@@ -99,7 +101,7 @@ def analyze_spending(user_id: str, transactions: list[dict]) -> dict:
     top_merchants = sorted(
         [{"merchant": k, "total": v} for k, v in by_merchant.items()],
         key=lambda x: x["total"],
-        reverse=True
+        reverse=True,
     )[:5]
 
     logger.info(

@@ -5,8 +5,8 @@ These test the pure business logic in isolation.
 No DB, no HTTP, no mocks needed.
 """
 
-import pytest
-from datetime import time, date
+from datetime import date, time
+
 from backend.income.shifts import calculate_hours
 
 
@@ -37,7 +37,7 @@ class TestCalculateHours:
     def test_minutes_precision(self):
         """7h 23min shift rounds to 2 decimal places"""
         result = calculate_hours(time(9, 0), time(16, 23))
-        assert result == round(7 + 23/60, 2)
+        assert result == round(7 + 23 / 60, 2)
 
 
 class TestEarningsCalculation:
@@ -88,8 +88,8 @@ class TestEarningsCalculation:
     def test_minimum_wage_calculation(self):
         """Ontario minimum wage $17.20/hr for common shift lengths"""
         cases = [
-            (time(9, 0), time(13, 0), 4.0, 68.80),   # 4h
-            (time(9, 0), time(17, 0), 8.0, 137.60),   # 8h
+            (time(9, 0), time(13, 0), 4.0, 68.80),  # 4h
+            (time(9, 0), time(17, 0), 8.0, 137.60),  # 8h
             (time(9, 0), time(21, 0), 12.0, 206.40),  # 12h
         ]
         for start, end, expected_hours, expected_earnings in cases:

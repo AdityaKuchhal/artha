@@ -3,7 +3,7 @@ test_jobs.py — Unit tests for job business logic.
 """
 
 import pytest
-from unittest.mock import MagicMock, patch
+
 from backend.api.schemas import JobCreate, JobUpdate
 
 

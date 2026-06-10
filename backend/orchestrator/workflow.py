@@ -9,10 +9,11 @@ Graph:
 """
 
 import logging
-from typing import TypedDict, Annotated
-from langgraph.graph import StateGraph, END
+from typing import TypedDict
+
 from langgraph.checkpoint.memory import MemorySaver
-from backend.agents.extraction_agent import process_transactions
+from langgraph.graph import END, StateGraph
+
 from backend.agents.analysis_agent import analyze_spending
 from backend.agents.budget_monitor_agent import monitor_budgets
 from backend.agents.report_agent import generate_report
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class ArthState(TypedDict):
     """Shared state passed between all agents in the workflow."""
+
     user_id: str
     transactions: list[dict]
     categorized: list[dict]
@@ -39,21 +41,21 @@ def extraction_node(state: ArthState) -> ArthState:
     """
     logger.info(f"[extraction] Starting for user {state['user_id']}")
     try:
-        from backend.db.supabase import supabase
+        import os
+        from datetime import date, timedelta
+
+        import certifi
+        from plaid import ApiClient, Configuration, Environment
         from plaid.api import plaid_api
         from plaid.model.transactions_get_request import TransactionsGetRequest
         from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
-        from plaid import ApiClient, Configuration, Environment
-        from datetime import date, timedelta
-        import os, certifi
+
+        from backend.db.supabase import supabase
 
         user_id = state["user_id"]
         days = state.get("sync_period_days", 30)
 
-        items = supabase.table("plaid_items")\
-            .select("*")\
-            .eq("user_id", user_id)\
-            .execute()
+        items = supabase.table("plaid_items").select("*").eq("user_id", user_id).execute()
 
         if not items.data:
             state["errors"].append("No linked bank accounts found")
@@ -91,8 +93,8 @@ def extraction_node(state: ArthState) -> ArthState:
                 "amount": float(t.amount),
                 "date": str(t.date),
                 "category": t.personal_finance_category.primary
-                    if hasattr(t, 'personal_finance_category')
-                    and t.personal_finance_category else "UNCATEGORIZED",
+                if hasattr(t, "personal_finance_category") and t.personal_finance_category
+                else "UNCATEGORIZED",
                 "is_subscription": False,
             }
             for t in all_transactions
@@ -103,7 +105,7 @@ def extraction_node(state: ArthState) -> ArthState:
 
     except Exception as e:
         logger.error(f"[extraction] Failed: {e}")
-        state["errors"].append(f"Extraction error: {str(e)}")
+        state["errors"].append(f"Extraction error: {e!s}")
         state["transactions"] = []
 
     return state
@@ -131,22 +133,23 @@ def categorization_node(state: ArthState) -> ArthState:
         upsert_payload = []
         for txn in categorized:
             merchant = txn.get("merchant_name", "Unknown")
-            upsert_payload.append({
-                "user_id": state["user_id"],
-                "plaid_transaction_id": txn["plaid_transaction_id"],
-                "merchant_name": merchant,
-                "amount": txn["amount"],
-                "date": txn["date"],
-                "category": txn["category"],
-                "ai_category": txn.get("ai_category", txn["category"]),
-                "is_subscription": is_subscription(merchant, txn["amount"]),
-                "is_recurring": txn.get("is_recurring", False),
-            })
+            upsert_payload.append(
+                {
+                    "user_id": state["user_id"],
+                    "plaid_transaction_id": txn["plaid_transaction_id"],
+                    "merchant_name": merchant,
+                    "amount": txn["amount"],
+                    "date": txn["date"],
+                    "category": txn["category"],
+                    "ai_category": txn.get("ai_category", txn["category"]),
+                    "is_subscription": is_subscription(merchant, txn["amount"]),
+                    "is_recurring": txn.get("is_recurring", False),
+                }
+            )
 
         if upsert_payload:
             supabase.table("transactions").upsert(
-                upsert_payload,
-                on_conflict="plaid_transaction_id"
+                upsert_payload, on_conflict="plaid_transaction_id"
             ).execute()
 
         state["categorized"] = categorized
@@ -154,7 +157,7 @@ def categorization_node(state: ArthState) -> ArthState:
 
     except Exception as e:
         logger.error(f"[categorization] Failed: {e}")
-        state["errors"].append(f"Categorization error: {str(e)}")
+        state["errors"].append(f"Categorization error: {e!s}")
         state["categorized"] = state["transactions"]
 
     return state
@@ -165,15 +168,14 @@ def analysis_node(state: ArthState) -> ArthState:
     logger.info(f"[analysis] Analyzing {len(state['categorized'])} transactions")
 
     try:
-        state["analysis"] = analyze_spending(
-            state["user_id"],
-            state["categorized"]
+        state["analysis"] = analyze_spending(state["user_id"], state["categorized"])
+        logger.info(
+            f"[analysis] Complete — {len(state['analysis'].get('anomalies', []))} anomalies found"
         )
-        logger.info(f"[analysis] Complete — {len(state['analysis'].get('anomalies', []))} anomalies found")
 
     except Exception as e:
         logger.error(f"[analysis] Failed: {e}")
-        state["errors"].append(f"Analysis error: {str(e)}")
+        state["errors"].append(f"Analysis error: {e!s}")
         state["analysis"] = {}
 
     return state
@@ -184,15 +186,12 @@ def budget_monitor_node(state: ArthState) -> ArthState:
     logger.info(f"[budget_monitor] Checking budgets for user {state['user_id']}")
 
     try:
-        state["budget_alerts"] = monitor_budgets(
-            state["user_id"],
-            state["analysis"]
-        )
+        state["budget_alerts"] = monitor_budgets(state["user_id"], state["analysis"])
         logger.info(f"[budget_monitor] {len(state['budget_alerts'])} alerts generated")
 
     except Exception as e:
         logger.error(f"[budget_monitor] Failed: {e}")
-        state["errors"].append(f"Budget monitor error: {str(e)}")
+        state["errors"].append(f"Budget monitor error: {e!s}")
         state["budget_alerts"] = []
 
     return state
@@ -213,7 +212,7 @@ def report_node(state: ArthState) -> ArthState:
 
     except Exception as e:
         logger.error(f"[report] Failed: {e}")
-        state["errors"].append(f"Report error: {str(e)}")
+        state["errors"].append(f"Report error: {e!s}")
         state["report"] = "Report generation failed."
 
     return state

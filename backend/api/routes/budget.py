@@ -4,6 +4,7 @@ budget.py — Budget management endpoints.
 
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
+
 from backend.db.supabase import supabase
 
 router = APIRouter(prefix="/budgets", tags=["Budgets"])
@@ -31,11 +32,18 @@ async def create_budget(
     """Set a monthly budget for a spending category."""
     user_id = get_user_id(authorization)
 
-    response = supabase.table("budgets").upsert({
-        "user_id": user_id,
-        "category": data.category,
-        "monthly_limit": data.monthly_limit,
-    }, on_conflict="user_id,category").execute()
+    response = (
+        supabase.table("budgets")
+        .upsert(
+            {
+                "user_id": user_id,
+                "category": data.category,
+                "monthly_limit": data.monthly_limit,
+            },
+            on_conflict="user_id,category",
+        )
+        .execute()
+    )
 
     if not response.data:
         raise HTTPException(status_code=400, detail="Failed to create budget")
@@ -47,10 +55,7 @@ async def create_budget(
 async def get_budgets(authorization: str = Header(...)):
     """Get all budget limits for the authenticated user."""
     user_id = get_user_id(authorization)
-    response = supabase.table("budgets")\
-        .select("*")\
-        .eq("user_id", user_id)\
-        .execute()
+    response = supabase.table("budgets").select("*").eq("user_id", user_id).execute()
     return response.data or []
 
 
@@ -61,8 +66,4 @@ async def delete_budget(
 ):
     """Delete a budget limit."""
     user_id = get_user_id(authorization)
-    supabase.table("budgets")\
-        .delete()\
-        .eq("id", budget_id)\
-        .eq("user_id", user_id)\
-        .execute()
+    supabase.table("budgets").delete().eq("id", budget_id).eq("user_id", user_id).execute()

@@ -3,9 +3,10 @@ transactions.py — Transaction query endpoints.
 """
 
 import logging
-from fastapi import APIRouter, Header, HTTPException, Query
 from datetime import date
-from typing import Optional
+
+from fastapi import APIRouter, Header, HTTPException, Query
+
 from backend.db.supabase import supabase
 
 logger = logging.getLogger(__name__)
@@ -23,18 +24,16 @@ def get_user_id(authorization: str) -> str:
 
 @router.get("")
 async def get_transactions(
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    category: Optional[str] = Query(None),
-    is_subscription: Optional[bool] = Query(None),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
+    category: str | None = Query(None),
+    is_subscription: bool | None = Query(None),
     authorization: str = Header(...),
 ):
     """Get transactions with optional filters."""
     user_id = get_user_id(authorization)
 
-    query = supabase.table("transactions")\
-        .select("*")\
-        .eq("user_id", user_id)
+    query = supabase.table("transactions").select("*").eq("user_id", user_id)
 
     if start_date:
         query = query.gte("date", str(start_date))
@@ -51,8 +50,7 @@ async def get_transactions(
 
 @router.get("/summary")
 async def get_spending_summary(
-    period: str = Query(default="monthly",
-                        pattern="^(weekly|monthly)$"),
+    period: str = Query(default="monthly", pattern="^(weekly|monthly)$"),
     authorization: str = Header(...),
 ):
     """
@@ -60,6 +58,7 @@ async def get_spending_summary(
     Used for the dashboard spending breakdown.
     """
     from datetime import timedelta
+
     today = date.today()
 
     if period == "weekly":
@@ -69,12 +68,14 @@ async def get_spending_summary(
 
     user_id = get_user_id(authorization)
 
-    response = supabase.table("transactions")\
-        .select("ai_category, amount")\
-        .eq("user_id", user_id)\
-        .gte("date", str(start_date))\
-        .lte("date", str(today))\
+    response = (
+        supabase.table("transactions")
+        .select("ai_category, amount")
+        .eq("user_id", user_id)
+        .gte("date", str(start_date))
+        .lte("date", str(today))
         .execute()
+    )
 
     transactions = response.data or []
 
@@ -101,11 +102,13 @@ async def get_subscriptions(authorization: str = Header(...)):
     """Get all detected subscriptions."""
     user_id = get_user_id(authorization)
 
-    response = supabase.table("transactions")\
-        .select("merchant_name, amount, date, ai_category")\
-        .eq("user_id", user_id)\
-        .eq("is_subscription", True)\
-        .order("amount", desc=True)\
+    response = (
+        supabase.table("transactions")
+        .select("merchant_name, amount, date, ai_category")
+        .eq("user_id", user_id)
+        .eq("is_subscription", True)
+        .order("amount", desc=True)
         .execute()
+    )
 
     return response.data or []

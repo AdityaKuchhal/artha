@@ -7,20 +7,19 @@ Flow:
   3. POST /plaid/sync          — fetch and store transactions
 """
 
-import os
 import logging
+import os
+
 from fastapi import APIRouter, Header, HTTPException
-from pydantic import BaseModel
+from plaid import ApiClient, Configuration, Environment
 from plaid.api import plaid_api
+from plaid.model.country_code import CountryCode
+from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
-from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
-from plaid.model.transactions_get_request import TransactionsGetRequest
-from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
-from plaid.model.country_code import CountryCode
 from plaid.model.products import Products
-from plaid import ApiClient, Configuration, Environment
-from datetime import date, timedelta
+from pydantic import BaseModel
+
 from backend.db.supabase import supabase
 
 logger = logging.getLogger(__name__)
@@ -41,7 +40,7 @@ def get_plaid_client() -> plaid_api.PlaidApi:
         api_key={
             "clientId": os.getenv("PLAID_CLIENT_ID"),
             "secret": os.getenv("PLAID_SECRET"),
-        }
+        },
     )
     api_client = ApiClient(configuration)
     return plaid_api.PlaidApi(api_client)
@@ -100,20 +99,20 @@ async def exchange_public_token(
     client = get_plaid_client()
 
     try:
-        exchange_request = ItemPublicTokenExchangeRequest(
-            public_token=data.public_token
-        )
+        exchange_request = ItemPublicTokenExchangeRequest(public_token=data.public_token)
         response = client.item_public_token_exchange(exchange_request)
         access_token = response.access_token
         item_id = response.item_id
 
         # Store access token in Supabase
-        supabase.table("plaid_items").upsert({
-            "user_id": user_id,
-            "access_token": access_token,
-            "item_id": item_id,
-            "institution_name": data.institution_name,
-        }).execute()
+        supabase.table("plaid_items").upsert(
+            {
+                "user_id": user_id,
+                "access_token": access_token,
+                "item_id": item_id,
+                "institution_name": data.institution_name,
+            }
+        ).execute()
 
         logger.info(f"Linked bank account for user {user_id}: {data.institution_name}")
         return {
@@ -140,23 +139,25 @@ async def sync_transactions(
 
     user_id = get_user_id(authorization)
 
-    items = supabase.table("plaid_items")\
-        .select("id")\
-        .eq("user_id", user_id)\
-        .execute()
+    items = supabase.table("plaid_items").select("id").eq("user_id", user_id).execute()
 
     if not items.data:
         raise HTTPException(
-            status_code=404,
-            detail="No linked bank accounts. Connect a bank first."
+            status_code=404, detail="No linked bank accounts. Connect a bank first."
         )
 
-    job = supabase.table("agent_jobs").insert({
-        "user_id": user_id,
-        "job_type": "sync",
-        "status": "pending",
-        "payload": {"days": days},
-    }).execute()
+    job = (
+        supabase.table("agent_jobs")
+        .insert(
+            {
+                "user_id": user_id,
+                "job_type": "sync",
+                "status": "pending",
+                "payload": {"days": days},
+            }
+        )
+        .execute()
+    )
 
     job_id = job.data[0]["id"]
     invoke_job_async(job_id, user_id, "sync", {"days": days})

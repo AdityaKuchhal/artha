@@ -2,38 +2,32 @@
 schemas.py — Pydantic models for request/response validation.
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
-from datetime import date as DateType, time as TimeType
+from datetime import date as DateType
+from datetime import time as TimeType
 from uuid import UUID
 
+from pydantic import BaseModel, Field
 
 # ── Job Schemas ────────────────────────────────────────────────
 
+
 class JobCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100,
-                      description="Job or employer name")
-    hourly_rate: float = Field(..., gt=0, le=1000,
-                               description="Hourly pay rate in CAD")
-    color: str = Field(default="#00e5a0",
-                       description="Color tag for UI display")
+    name: str = Field(..., min_length=1, max_length=100, description="Job or employer name")
+    hourly_rate: float = Field(..., gt=0, le=1000, description="Hourly pay rate in CAD")
+    color: str = Field(default="#00e5a0", description="Color tag for UI display")
 
     model_config = {
         "json_schema_extra": {
-            "examples": [{
-                "name": "Tim Hortons",
-                "hourly_rate": 17.20,
-                "color": "#00e5a0"
-            }]
+            "examples": [{"name": "Tim Hortons", "hourly_rate": 17.20, "color": "#00e5a0"}]
         }
     }
 
 
 class JobUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    hourly_rate: Optional[float] = Field(None, gt=0, le=1000)
-    color: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = Field(None, min_length=1, max_length=100)
+    hourly_rate: float | None = Field(None, gt=0, le=1000)
+    color: str | None = None
+    is_active: bool | None = None
 
 
 class JobResponse(BaseModel):
@@ -48,34 +42,37 @@ class JobResponse(BaseModel):
 
 # ── Shift Schemas ──────────────────────────────────────────────
 
+
 class ShiftCreate(BaseModel):
     job_id: UUID = Field(..., description="Job this shift belongs to")
     date: DateType = Field(..., description="Date of the shift")
     start_time: TimeType = Field(..., description="Shift start time")
     end_time: TimeType = Field(..., description="Shift end time")
-    break_minutes: Optional[int] = Field(None, ge=0, le=480, description="Break duration in minutes")
-    break_paid: Optional[bool] = Field(None, description="Whether the break is paid")
-    notes: Optional[str] = Field(None, max_length=500)
+    break_minutes: int | None = Field(None, ge=0, le=480, description="Break duration in minutes")
+    break_paid: bool | None = Field(None, description="Whether the break is paid")
+    notes: str | None = Field(None, max_length=500)
 
 
 class ShiftUpdate(BaseModel):
-    job_id: Optional[UUID] = None
-    date: Optional[DateType] = None
-    start_time: Optional[TimeType] = None
-    end_time: Optional[TimeType] = None
-    break_minutes: Optional[int] = Field(None, ge=0, le=480)
-    break_paid: Optional[bool] = None
-    notes: Optional[str] = Field(None, max_length=500)
+    job_id: UUID | None = None
+    date: DateType | None = None
+    start_time: TimeType | None = None
+    end_time: TimeType | None = None
+    break_minutes: int | None = Field(None, ge=0, le=480)
+    break_paid: bool | None = None
+    notes: str | None = Field(None, max_length=500)
 
     model_config = {
         "json_schema_extra": {
-            "examples": [{
-                "job_id": "uuid-here",
-                "date": "2026-06-02",
-                "start_time": "09:00:00",
-                "end_time": "15:00:00",
-                "notes": "Covered for Sarah"
-            }]
+            "examples": [
+                {
+                    "job_id": "uuid-here",
+                    "date": "2026-06-02",
+                    "start_time": "09:00:00",
+                    "end_time": "15:00:00",
+                    "notes": "Covered for Sarah",
+                }
+            ]
         }
     }
 
@@ -90,21 +87,23 @@ class ShiftResponse(BaseModel):
     hours_worked: float
     earnings: float
     source: str
-    notes: Optional[str]
+    notes: str | None
     created_at: str
 
 
 # ── Earnings Summary Schemas ───────────────────────────────────
 
+
 class EarningsSummary(BaseModel):
-    period: str                    # daily | weekly | biweekly | monthly
+    period: str  # daily | weekly | biweekly | monthly
     total_hours: float
     total_earnings: float
-    by_job: list[dict]             # breakdown per job
+    by_job: list[dict]  # breakdown per job
     shift_count: int
 
 
 # ── Auth Schemas ───────────────────────────────────────────────
+
 
 class UserSignUp(BaseModel):
     email: str

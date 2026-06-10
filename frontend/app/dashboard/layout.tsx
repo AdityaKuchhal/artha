@@ -6,9 +6,18 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { ThemeProvider, useTheme } from '@/lib/theme'
 import {
-  LayoutDashboard, Building2, ArrowLeftRight,
-  TrendingUp, PieChart, Zap, LogOut,
-  ChevronLeft, ChevronRight, Sun, Moon, Menu
+  LayoutDashboard,
+  Building2,
+  ArrowLeftRight,
+  TrendingUp,
+  PieChart,
+  Zap,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Sun,
+  Moon,
+  Menu,
 } from 'lucide-react'
 
 const NAV = [
@@ -30,16 +39,19 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const [isMobile, setIsMobile] = useState(false)
   const supabase = createClient()
 
-  const currentPage = NAV.find(n => n.href === pathname)
+  const currentPage = NAV.find((n) => n.href === pathname)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) { router.push('/'); return }
+      if (!data.session) {
+        router.push('/')
+        return
+      }
       const meta = data.session.user.user_metadata
       const name = meta?.full_name || data.session.user.email || ''
       setUserEmail(name)
     })
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -80,7 +92,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                 className={`nav-item ${active ? 'active' : ''}`}
                 title={isCollapsed ? label : undefined}
               >
-                <span className="nav-item-icon"><Icon size={18} /></span>
+                <span className="nav-item-icon">
+                  <Icon size={18} />
+                </span>
                 {!isCollapsed && label}
               </Link>
             )
@@ -108,7 +122,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             style={{ marginTop: '4px', color: 'var(--text3)', width: '100%' }}
             title={isCollapsed ? 'Sign out' : undefined}
           >
-            <span className="nav-item-icon"><LogOut size={16} /></span>
+            <span className="nav-item-icon">
+              <LogOut size={16} />
+            </span>
             {!isCollapsed && 'Sign out'}
           </button>
         </div>
@@ -120,21 +136,27 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           {/* Collapse toggle */}
           <button
             className="collapse-btn"
-            onClick={() => isMobile ? setMobileOpen(!mobileOpen) : setCollapsed(!collapsed)}
+            onClick={() => (isMobile ? setMobileOpen(!mobileOpen) : setCollapsed(!collapsed))}
             title="Toggle sidebar"
           >
-            {isMobile
-              ? <Menu size={16} />
-              : isCollapsed
-                ? <ChevronRight size={16} />
-                : <ChevronLeft size={16} />
-            }
+            {isMobile ? (
+              <Menu size={16} />
+            ) : isCollapsed ? (
+              <ChevronRight size={16} />
+            ) : (
+              <ChevronLeft size={16} />
+            )}
           </button>
 
           <div>
             <div className="header-title">{currentPage?.label || 'Artha'}</div>
             <div className="header-sub">
-              {new Date().toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              {new Date().toLocaleDateString('en-CA', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}
             </div>
           </div>
         </div>
@@ -146,14 +168,14 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           </button>
 
           {/* User avatar */}
-          <div className="user-avatar" style={{ cursor: 'default' }}>{initials}</div>
+          <div className="user-avatar" style={{ cursor: 'default' }}>
+            {initials}
+          </div>
         </div>
       </header>
 
       {/* Main */}
-      <main className={`main ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
-        {children}
-      </main>
+      <main className={`main ${isCollapsed ? 'sidebar-collapsed' : ''}`}>{children}</main>
     </div>
   )
 }

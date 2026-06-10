@@ -8,14 +8,15 @@ Strategy:
 - Provide a FastAPI TestClient with a fake JWT
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 # Import app at module level so all route modules are registered in sys.modules
 # before any patch() call tries to resolve them. .env provides real credentials
 # for supabase-py initialization — no HTTP calls are made at init time.
-from backend.api.main import app  # noqa: E402
+from backend.api.main import app
 
 # ── Fake user ──────────────────────────────────────────────────
 FAKE_USER_ID = "dc51368f-961e-480a-bc38-1836e1ab8cf2"
@@ -23,11 +24,12 @@ FAKE_TOKEN = "fake-jwt-token"
 FAKE_AUTH_HEADER = f"Bearer {FAKE_TOKEN}"
 
 # Valid UUID constants — Pydantic validates UUID fields at request time
-FAKE_JOB_ID   = "11111111-1111-1111-1111-111111111111"
+FAKE_JOB_ID = "11111111-1111-1111-1111-111111111111"
 FAKE_SHIFT_ID = "22222222-2222-2222-2222-222222222222"
-FAKE_ITEM_ID  = "33333333-3333-3333-3333-333333333333"
+FAKE_ITEM_ID = "33333333-3333-3333-3333-333333333333"
 
 # ── Fake data factories ────────────────────────────────────────
+
 
 def make_job(overrides: dict = {}) -> dict:
     return {
@@ -40,6 +42,7 @@ def make_job(overrides: dict = {}) -> dict:
         "created_at": "2026-06-01T00:00:00Z",
         **overrides,
     }
+
 
 def make_shift(overrides: dict = {}) -> dict:
     return {
@@ -57,6 +60,7 @@ def make_shift(overrides: dict = {}) -> dict:
         "notes": None,
         **overrides,
     }
+
 
 def make_plaid_item(overrides: dict = {}) -> dict:
     return {
@@ -111,15 +115,16 @@ def test_client(mock_supabase):
     FastAPI TestClient with Supabase patched at every import point.
     app is imported at module level above so all routes are in sys.modules.
     """
-    with patch("backend.db.supabase.supabase", mock_supabase), \
-         patch("backend.api.routes.shifts.supabase", mock_supabase), \
-         patch("backend.api.routes.jobs.supabase", mock_supabase), \
-         patch("backend.api.routes.plaid.supabase", mock_supabase), \
-         patch("backend.api.routes.budget.supabase", mock_supabase), \
-         patch("backend.api.routes.reports.supabase", mock_supabase), \
-         patch("backend.api.routes.jobs_worker.supabase", mock_supabase), \
-         patch("backend.income.shifts.supabase", mock_supabase), \
-         patch("backend.income.jobs.supabase", mock_supabase):
-
+    with (
+        patch("backend.db.supabase.supabase", mock_supabase),
+        patch("backend.api.routes.shifts.supabase", mock_supabase),
+        patch("backend.api.routes.jobs.supabase", mock_supabase),
+        patch("backend.api.routes.plaid.supabase", mock_supabase),
+        patch("backend.api.routes.budget.supabase", mock_supabase),
+        patch("backend.api.routes.reports.supabase", mock_supabase),
+        patch("backend.api.routes.jobs_worker.supabase", mock_supabase),
+        patch("backend.income.shifts.supabase", mock_supabase),
+        patch("backend.income.jobs.supabase", mock_supabase),
+    ):
         client = TestClient(app, raise_server_exceptions=True)
         yield client, mock_supabase

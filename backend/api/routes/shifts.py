@@ -2,12 +2,13 @@
 routes/shifts.py — Shift logging and earnings API endpoints.
 """
 
-from fastapi import APIRouter, Header, HTTPException, Query
 from datetime import date
-from typing import Optional
+
+from fastapi import APIRouter, Header, HTTPException, Query
+
 from backend.api.schemas import ShiftCreate, ShiftUpdate
-from backend.income.shifts import log_shift, update_shift, get_shifts, get_earnings_summary
 from backend.db.supabase import supabase
+from backend.income.shifts import get_earnings_summary, get_shifts, log_shift, update_shift
 
 router = APIRouter(prefix="/shifts", tags=["Shifts"])
 
@@ -59,20 +60,16 @@ async def delete_shift_route(
 ):
     """Delete a shift log."""
     user_id = get_user_id(authorization)
-    result = supabase.table("shifts")\
-        .delete()\
-        .eq("id", shift_id)\
-        .eq("user_id", user_id)\
-        .execute()
+    result = supabase.table("shifts").delete().eq("id", shift_id).eq("user_id", user_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Shift not found")
 
 
 @router.get("")
 async def get_shifts_route(
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    job_id: Optional[str] = Query(None),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
+    job_id: str | None = Query(None),
     authorization: str = Header(...),
 ):
     """Get shifts with optional date range and job filters."""
@@ -82,8 +79,7 @@ async def get_shifts_route(
 
 @router.get("/earnings/summary")
 async def earnings_summary_route(
-    period: str = Query(default="monthly",
-                        pattern="^(daily|weekly|biweekly|monthly)$"),
+    period: str = Query(default="monthly", pattern="^(daily|weekly|biweekly|monthly)$"),
     authorization: str = Header(...),
 ):
     """
@@ -105,17 +101,20 @@ async def daily_earnings_route(
     Used for the weekly bar chart on the dashboard.
     """
     from datetime import timedelta
+
     user_id = get_user_id(authorization)
 
     today = date.today()
     start_date = today - timedelta(days=days - 1)
 
-    shifts = supabase.table("shifts")\
-        .select("date, earnings, hours_worked, job_id")\
-        .eq("user_id", user_id)\
-        .gte("date", str(start_date))\
-        .lte("date", str(today))\
+    shifts = (
+        supabase.table("shifts")
+        .select("date, earnings, hours_worked, job_id")
+        .eq("user_id", user_id)
+        .gte("date", str(start_date))
+        .lte("date", str(today))
         .execute()
+    )
 
     # Build day-by-day map
     daily: dict[str, dict] = {}
@@ -129,7 +128,7 @@ async def daily_earnings_route(
         }
         cursor += timedelta(days=1)
 
-    for s in (shifts.data or []):
+    for s in shifts.data or []:
         d = s["date"]
         if d in daily:
             daily[d]["earnings"] = round(daily[d]["earnings"] + s["earnings"], 2)

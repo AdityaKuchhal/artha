@@ -6,3 +6,51 @@ requires-python = ">=3.11"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["backend*"]
+
+# ── Ruff — linter + formatter ──────────────────────────────────
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+exclude = ["venv", ".venv", "__pycache__", "artha.egg-info"]
+
+[tool.ruff.lint]
+select = [
+  "E",    # pycodestyle errors
+  "W",    # pycodestyle warnings
+  "F",    # pyflakes
+  "I",    # isort
+  "B",    # flake8-bugbear
+  "UP",   # pyupgrade
+  "N",    # pep8-naming
+  "RUF",  # ruff-specific
+]
+ignore = [
+  "E501",   # line too long — handled by formatter
+  "B008",   # do not perform function calls in default args (FastAPI Depends pattern)
+  "B904",   # raise-without-from-inside-except — HTTPException pattern in FastAPI routes
+  "N812",   # lowercase-imported-as-non-lowercase — DateType/TimeType aliases are intentional
+  "N999",   # invalid module name (routes use underscores)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/**" = [
+  "B006",   # mutable-argument-default — test factories use {} for brevity
+  "B017",   # assert-raises-without-match — pydantic ValidationError is fine as Exception
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["backend"]
+
+# ── Mypy — type checking ───────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+exclude = ["venv", "artha.egg-info", "backend/tests"]
+
+# ── Pytest ─────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+asyncio_mode = "auto"

@@ -3,7 +3,9 @@ reports.py — Async report trigger and status endpoints.
 """
 
 import logging
+
 from fastapi import APIRouter, Header, HTTPException, Query
+
 from backend.db.supabase import supabase
 from backend.utils.async_invoker import invoke_job_async
 
@@ -31,12 +33,18 @@ async def run_workflow(
     """
     user_id = get_user_id(authorization)
 
-    job = supabase.table("agent_jobs").insert({
-        "user_id": user_id,
-        "job_type": "report",
-        "status": "pending",
-        "payload": {"days": days},
-    }).execute()
+    job = (
+        supabase.table("agent_jobs")
+        .insert(
+            {
+                "user_id": user_id,
+                "job_type": "report",
+                "status": "pending",
+                "payload": {"days": days},
+            }
+        )
+        .execute()
+    )
 
     job_id = job.data[0]["id"]
     invoke_job_async(job_id, user_id, "report", {"days": days})
@@ -59,12 +67,14 @@ async def get_job_status(
     """
     user_id = get_user_id(authorization)
 
-    job = supabase.table("agent_jobs")\
-        .select("*")\
-        .eq("id", job_id)\
-        .eq("user_id", user_id)\
-        .single()\
+    job = (
+        supabase.table("agent_jobs")
+        .select("*")
+        .eq("id", job_id)
+        .eq("user_id", user_id)
+        .single()
         .execute()
+    )
 
     if not job.data:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -92,14 +102,16 @@ async def get_latest_report(authorization: str = Header(...)):
     """
     user_id = get_user_id(authorization)
 
-    job = supabase.table("agent_jobs")\
-        .select("*")\
-        .eq("user_id", user_id)\
-        .eq("job_type", "report")\
-        .eq("status", "complete")\
-        .order("created_at", desc=True)\
-        .limit(1)\
+    job = (
+        supabase.table("agent_jobs")
+        .select("*")
+        .eq("user_id", user_id)
+        .eq("job_type", "report")
+        .eq("status", "complete")
+        .order("created_at", desc=True)
+        .limit(1)
         .execute()
+    )
 
     if not job.data:
         return {"message": "No completed reports found. Run /reports/run first."}

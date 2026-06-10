@@ -43,51 +43,65 @@ export function usePlaidLink(onSuccess?: (account: LinkedAccount) => void): UseP
     }
   }, [])
 
-  useEffect(() => { fetchLinkToken() }, [fetchLinkToken])
+  useEffect(() => {
+    fetchLinkToken()
+  }, [fetchLinkToken])
 
-  const handleSuccess = useCallback(async (public_token: string, metadata: any) => {
-    const institutionName = metadata?.institution?.name || 'Unknown Bank'
+  const handleSuccess = useCallback(
+    async (public_token: string, metadata: any) => {
+      const institutionName = metadata?.institution?.name || 'Unknown Bank'
 
-    const optimisticAccount: LinkedAccount = {
-      item_id: `pending-${Date.now()}`,
-      institution_name: institutionName,
-      status: 'linked',
-    }
-    setLinkedAccounts(prev => [...prev, optimisticAccount])
+      const optimisticAccount: LinkedAccount = {
+        item_id: `pending-${Date.now()}`,
+        institution_name: institutionName,
+        status: 'linked',
+      }
+      setLinkedAccounts((prev) => [...prev, optimisticAccount])
 
-    try {
-      await api.plaid.exchange(public_token, institutionName)
+      try {
+        await api.plaid.exchange(public_token, institutionName)
 
-      setLinkedAccounts(prev =>
-        prev.map(a => a.item_id === optimisticAccount.item_id ? { ...a, status: 'syncing' } : a)
-      )
-
-      setSyncing(true)
-      const syncResult = await api.plaid.sync(30) as { synced?: number }
-
-      setLinkedAccounts(prev =>
-        prev.map(a => a.item_id === optimisticAccount.item_id
-          ? { ...a, status: 'synced', synced_count: syncResult?.synced || 0 }
-          : a
+        setLinkedAccounts((prev) =>
+          prev.map((a) =>
+            a.item_id === optimisticAccount.item_id ? { ...a, status: 'syncing' } : a
+          )
         )
-      )
 
-      onSuccess?.({ ...optimisticAccount, status: 'synced', synced_count: syncResult?.synced || 0 })
-      fetchLinkToken() // re-arm for next connection
-    } catch (err: any) {
-      setLinkedAccounts(prev =>
-        prev.map(a => a.item_id === optimisticAccount.item_id ? { ...a, status: 'error' } : a)
-      )
-      setError(err?.message || 'Failed to sync transactions')
-    } finally {
-      setSyncing(false)
-    }
-  }, [fetchLinkToken, onSuccess])
+        setSyncing(true)
+        const syncResult = (await api.plaid.sync(30)) as { synced?: number }
+
+        setLinkedAccounts((prev) =>
+          prev.map((a) =>
+            a.item_id === optimisticAccount.item_id
+              ? { ...a, status: 'synced', synced_count: syncResult?.synced || 0 }
+              : a
+          )
+        )
+
+        onSuccess?.({
+          ...optimisticAccount,
+          status: 'synced',
+          synced_count: syncResult?.synced || 0,
+        })
+        fetchLinkToken() // re-arm for next connection
+      } catch (err: any) {
+        setLinkedAccounts((prev) =>
+          prev.map((a) => (a.item_id === optimisticAccount.item_id ? { ...a, status: 'error' } : a))
+        )
+        setError(err?.message || 'Failed to sync transactions')
+      } finally {
+        setSyncing(false)
+      }
+    },
+    [fetchLinkToken, onSuccess]
+  )
 
   const { open, ready } = usePlaidLinkSDK({
     token: linkToken || '',
     onSuccess: handleSuccess,
-    onExit: (err: unknown) => { if (err) setError('Bank connection was cancelled or failed') },
+    onExit: (err: unknown) => {
+      if (err) setError('Bank connection was cancelled or failed')
+    },
   })
 
   return { open: () => open(), ready: ready && !loading, loading, syncing, error, linkedAccounts }

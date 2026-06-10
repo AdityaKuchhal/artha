@@ -9,7 +9,6 @@ import { describe, it, expect } from 'vitest'
 import { formatDate, formatCurrency, getCategoryColor } from '@/lib/utils'
 
 describe('formatDate', () => {
-
   it('formats a standard date correctly', () => {
     expect(formatDate('2026-06-09')).toBe('Jun 9')
   })
@@ -65,9 +64,8 @@ describe('formatDate', () => {
 })
 
 describe('formatCurrency', () => {
-
   it('formats positive amounts in CAD', () => {
-    expect(formatCurrency(103.20)).toBe('$103.20')
+    expect(formatCurrency(103.2)).toBe('$103.20')
   })
 
   it('formats zero', () => {
@@ -87,23 +85,22 @@ describe('formatCurrency', () => {
   })
 
   it('formats negative amounts', () => {
-    const result = formatCurrency(-50.00)
+    const result = formatCurrency(-50.0)
     expect(result).toContain('50.00')
   })
 
   it('formats minimum wage earnings for a 6h shift', () => {
     // 6h @ $17.20 = $103.20
-    expect(formatCurrency(103.20)).toBe('$103.20')
+    expect(formatCurrency(103.2)).toBe('$103.20')
   })
 
   it('formats earnings with unpaid break deduction', () => {
     // 5.5h @ $17.20 = $94.60
-    expect(formatCurrency(94.60)).toBe('$94.60')
+    expect(formatCurrency(94.6)).toBe('$94.60')
   })
 })
 
 describe('getCategoryColor', () => {
-
   it('returns orange for FOOD_AND_DRINK', () => {
     expect(getCategoryColor('FOOD_AND_DRINK')).toBe('#f97316')
   })
@@ -149,7 +146,7 @@ describe('getCategoryColor', () => {
       'TRAVEL',
       'ENTERTAINMENT',
     ]
-    defined.forEach(cat => {
+    defined.forEach((cat) => {
       const color = getCategoryColor(cat)
       // Every known category must return a valid 6-digit hex color
       expect(color).toMatch(/^#[0-9a-f]{6}$/)

@@ -2,20 +2,20 @@
 main.py — Artha FastAPI application.
 """
 
-import os
 import logging
 from contextlib import asynccontextmanager
+
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api.routes.jobs import router as jobs_router
-from backend.api.routes.shifts import router as shifts_router
-from backend.api.routes.plaid import router as plaid_router
-from backend.api.routes.transactions import router as transactions_router
-from backend.api.routes.reports import router as reports_router
 from backend.api.routes.budget import router as budget_router
+from backend.api.routes.jobs import router as jobs_router
 from backend.api.routes.jobs_worker import router as jobs_worker_router
+from backend.api.routes.plaid import router as plaid_router
+from backend.api.routes.reports import router as reports_router
+from backend.api.routes.shifts import router as shifts_router
+from backend.api.routes.transactions import router as transactions_router
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -60,5 +60,6 @@ async def health():
     return {"status": "ok", "version": VERSION, "app": "artha"}
 
 
-from mangum import Mangum
+from mangum import Mangum  # noqa: E402
+
 handler = Mangum(app, lifespan="off")

@@ -30,7 +30,6 @@ vi.mock('next/navigation', () => ({
 }))
 
 describe('API client — request construction', () => {
-
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
   })
@@ -42,7 +41,7 @@ describe('API client — request construction', () => {
   it('injects Authorization header with Bearer token', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ([]),
+      json: async () => [],
     })
     vi.stubGlobal('fetch', mockFetch)
 
@@ -57,7 +56,7 @@ describe('API client — request construction', () => {
   it('sets Content-Type to application/json', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ([]),
+      json: async () => [],
     })
     vi.stubGlobal('fetch', mockFetch)
 
@@ -69,11 +68,14 @@ describe('API client — request construction', () => {
   })
 
   it('throws with detail message on non-ok response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false,
-      statusText: 'Not Found',
-      json: async () => ({ detail: 'Job not found' }),
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        statusText: 'Not Found',
+        json: async () => ({ detail: 'Job not found' }),
+      })
+    )
 
     const { api } = await import('@/lib/api')
     await expect(api.jobs.list()).rejects.toThrow('Job not found')
@@ -82,11 +84,14 @@ describe('API client — request construction', () => {
   it('falls back to "Request failed" when no detail in error body', async () => {
     // api.ts: throw new Error(error.detail || 'Request failed')
     // statusText is only used if res.json() itself throws
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false,
-      statusText: 'Internal Server Error',
-      json: async () => ({}),
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        statusText: 'Internal Server Error',
+        json: async () => ({}),
+      })
+    )
 
     const { api } = await import('@/lib/api')
     await expect(api.jobs.list()).rejects.toThrow('Request failed')
@@ -95,25 +100,35 @@ describe('API client — request construction', () => {
   it('sends POST body as JSON string', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ id: 'job-001', name: 'Tim Hortons', hourly_rate: 17.20, color: '#3b82f6', is_active: true, created_at: '' }),
+      json: async () => ({
+        id: 'job-001',
+        name: 'Tim Hortons',
+        hourly_rate: 17.2,
+        color: '#3b82f6',
+        is_active: true,
+        created_at: '',
+      }),
     })
     vi.stubGlobal('fetch', mockFetch)
 
     const { api } = await import('@/lib/api')
-    await api.jobs.create({ name: 'Tim Hortons', hourly_rate: 17.20 })
+    await api.jobs.create({ name: 'Tim Hortons', hourly_rate: 17.2 })
 
     const [, options] = mockFetch.mock.calls[0]
     expect(options.method).toBe('POST')
     const body = JSON.parse(options.body)
     expect(body.name).toBe('Tim Hortons')
-    expect(body.hourly_rate).toBe(17.20)
+    expect(body.hourly_rate).toBe(17.2)
   })
 
   it('sends DELETE with correct method', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({}),
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({}),
+      })
+    )
 
     const { api } = await import('@/lib/api')
     await api.jobs.delete('job-001')
@@ -125,7 +140,6 @@ describe('API client — request construction', () => {
 })
 
 describe('API client — plaid endpoints', () => {
-
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
   })
@@ -136,10 +150,13 @@ describe('API client — plaid endpoints', () => {
   })
 
   it('linkToken sends POST to /plaid/link-token', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ link_token: 'link-sandbox-abc' }),
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ link_token: 'link-sandbox-abc' }),
+      })
+    )
 
     const { api } = await import('@/lib/api')
     const result = await api.plaid.linkToken()
@@ -151,10 +168,13 @@ describe('API client — plaid endpoints', () => {
   })
 
   it('exchange sends public_token and institution_name', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ status: 'success', institution: 'RBC Royal Bank' }),
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ status: 'success', institution: 'RBC Royal Bank' }),
+      })
+    )
 
     const { api } = await import('@/lib/api')
     await api.plaid.exchange('public-token-xyz', 'RBC Royal Bank')
@@ -166,10 +186,13 @@ describe('API client — plaid endpoints', () => {
   })
 
   it('sync sends days as query param', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ job_id: 'job-uuid', status: 'pending' }),
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ job_id: 'job-uuid', status: 'pending' }),
+      })
+    )
 
     const { api } = await import('@/lib/api')
     await api.plaid.sync(60)
@@ -180,7 +203,6 @@ describe('API client — plaid endpoints', () => {
 })
 
 describe('API client — reports endpoints', () => {
-
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
   })
@@ -191,10 +213,13 @@ describe('API client — reports endpoints', () => {
   })
 
   it('run sends POST with days param', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ job_id: 'abc-123', status: 'pending', message: 'queued' }),
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ job_id: 'abc-123', status: 'pending', message: 'queued' }),
+      })
+    )
 
     const { api } = await import('@/lib/api')
     const result = await api.reports.run(30)
@@ -207,10 +232,13 @@ describe('API client — reports endpoints', () => {
   })
 
   it('status polls by job_id', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ job_id: 'abc-123', status: 'complete', report: 'Your spending...' }),
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ job_id: 'abc-123', status: 'complete', report: 'Your spending...' }),
+      })
+    )
 
     const { api } = await import('@/lib/api')
     const result = await api.reports.status('abc-123')
@@ -222,7 +250,6 @@ describe('API client — reports endpoints', () => {
 })
 
 describe('API client — shifts endpoints', () => {
-
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
   })
@@ -233,10 +260,19 @@ describe('API client — shifts endpoints', () => {
   })
 
   it('earnings sends correct period', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ period: 'monthly', total_earnings: 500, total_hours: 30, by_job: [], shift_count: 5 }),
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          period: 'monthly',
+          total_earnings: 500,
+          total_hours: 30,
+          by_job: [],
+          shift_count: 5,
+        }),
+      })
+    )
 
     const { api } = await import('@/lib/api')
     await api.shifts.earnings('monthly')
@@ -246,10 +282,13 @@ describe('API client — shifts endpoints', () => {
   })
 
   it('daily sends days param', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ days: [], total_earnings: 0, total_hours: 0 }),
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ days: [], total_earnings: 0, total_hours: 0 }),
+      })
+    )
 
     const { api } = await import('@/lib/api')
     await api.shifts.daily(7)
@@ -259,10 +298,13 @@ describe('API client — shifts endpoints', () => {
   })
 
   it('update sends PATCH with correct shift id', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: 'shift-001', hours_worked: 7.0, earnings: 120.40 }),
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: 'shift-001', hours_worked: 7.0, earnings: 120.4 }),
+      })
+    )
 
     const { api } = await import('@/lib/api')
     await api.shifts.update('shift-001', { end_time: '16:00:00' })
@@ -273,10 +315,13 @@ describe('API client — shifts endpoints', () => {
   })
 
   it('delete sends DELETE with correct shift id', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({}),
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({}),
+      })
+    )
 
     const { api } = await import('@/lib/api')
     await api.shifts.delete('shift-001')

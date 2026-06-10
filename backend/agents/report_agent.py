@@ -5,9 +5,10 @@ Uses Claude to produce a concise, actionable weekly/monthly
 spending summary based on analysis and budget alerts.
 """
 
-import os
 import json
 import logging
+import os
+
 from anthropic import Anthropic
 
 logger = logging.getLogger(__name__)
@@ -53,9 +54,7 @@ def generate_report(
         "transaction_count": analysis.get("transaction_count", 0),
         "daily_burn_rate": analysis.get("daily_burn_rate", 0),
         "top_categories": sorted(
-            analysis.get("by_category", {}).items(),
-            key=lambda x: x[1],
-            reverse=True
+            analysis.get("by_category", {}).items(), key=lambda x: x[1], reverse=True
         )[:5],
         "top_merchants": analysis.get("top_merchants", [])[:3],
         "anomalies": analysis.get("anomalies", []),
@@ -67,10 +66,12 @@ def generate_report(
             model="claude-sonnet-4-6",
             max_tokens=400,
             system=REPORT_SYSTEM_PROMPT,
-            messages=[{
-                "role": "user",
-                "content": f"Generate a spending report based on this data:\n{json.dumps(context, indent=2)}"
-            }]
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"Generate a spending report based on this data:\n{json.dumps(context, indent=2)}",
+                }
+            ],
         )
 
         report = response.content[0].text
